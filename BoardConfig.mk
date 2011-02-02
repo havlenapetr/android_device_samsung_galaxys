@@ -30,6 +30,11 @@ TARGET_CPU_ABI2 := armeabi
 
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
+BT_USE_BTL_IF := true
+BT_ALT_STACK := true
+BRCM_BTL_INCLUDE_A2DP := true
+BRCM_BT_USE_BTL_IF := true
+WITH_A2DP := true
 
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_KERNEL := false
@@ -75,15 +80,18 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE := 196608000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1932735283
 BOARD_FLASH_BLOCK_SIZE := 4096
 
-# Connectivity - Wi-Fi
-WPA_SUPPLICANT_VERSION := VER_0_6_X
+# WiFi related defines
 BOARD_WPA_SUPPLICANT_DRIVER := WEXT
+WPA_SUPPLICANT_VERSION := VER_0_6_X
 BOARD_WLAN_DEVICE := bcm4329
-WIFI_DRIVER_MODULE_PATH     := "/system/modules/bcm4329.ko"
-WIFI_DRIVER_FW_STA_PATH     := "/vendor/firmware/fw_bcm4329.bin"
-WIFI_DRIVER_FW_AP_PATH      := "/vendor/firmware/fw_bcm4329_apsta.bin"
-WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
-WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
+WIFI_DRIVER_MODULE_PATH     := "/lib/modules/dhd.ko"
+WIFI_DRIVER_FW_STA_PATH     := "/system/etc/wifi/bcm4329_sta.bin"
+WIFI_DRIVER_FW_AP_PATH      := "/system/etc/wifi/bcm4329_aps.bin"
+WIFI_DRIVER_MODULE_ARG      := "firmware_path=/system/etc/wifi/bcm4329_sta.bin nvram_path=/system/etc/wifi/nvram_net.txt dhd_watchdog_ms=10 dhd_poll=1"
+WIFI_DRIVER_MODULE_NAME     := "dhd"
+WIFI_IFACE_DIR              := "/data/misc/wifi"
+WIFI_SUPP_CONFIG_FILE       := "/data/wifi/bcm_supp.conf"
+CONFIG_DRIVER_WEXT          := true
 
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_HAS_NO_RECOVERY_PARTITION := true
