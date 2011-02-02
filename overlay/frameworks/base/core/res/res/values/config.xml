@@ -24,13 +24,7 @@
          config_hardware_automatic_brightness_available is not set, so we will use software implementation -->
     <bool name="config_automatic_brightness_available">true</bool>
 
-    <!-- There is no charging LED. -->
-    <bool name="config_unplugTurnsOnScreen">true</bool>
-
-    <!-- Our amoled doesn't animate well. -->
-    <bool name="config_animateScreenLights">false</bool>
-
-    <!-- disable menu hard key on Crespo in non-pattern lockscreen -->
+    <!-- disable menu hard key on GalaxyS in non-pattern lockscreen -->
     <bool name="config_disableMenuKeyInLockScreen">true</bool>
 
     <!-- Array of light sensor LUX values to define our levels for auto backlight brightness support.
@@ -44,10 +38,10 @@
 
          Must be overridden in platform specific overlays -->
     <integer-array name="config_autoBrightnessLevels">
-        <item>200</item>
-        <item>400</item>
-        <item>1000</item>
-        <item>3000</item>
+        <item>7</item>
+        <item>1001</item>
+        <item>5001</item>
+        <item>9001</item>
     </integer-array>
 
     <!-- Array of output values for LCD backlight corresponding to the LUX values
@@ -55,10 +49,10 @@
          than the size of the config_autoBrightnessLevels array.
     -->
     <integer-array name="config_autoBrightnessLcdBacklightValues">
-        <item>35</item>
+        <item>25</item>
         <item>55</item>
         <item>70</item>
-        <item>70</item>
+        <item>120</item>
         <item>250</item>
     </integer-array>
 
@@ -77,7 +71,7 @@
     <!-- Array of output values for keyboard backlight corresponding to the LUX values
          in the config_autoBrightnessLevels array.  This array should have size one greater
          than the size of the config_autoBrightnessLevels array.
-         Crespo has no keyboard so all values are zero.
+         GalaxyS has no keyboard so all values are zero.
     -->
     <integer-array name="config_autoBrightnessKeyboardBacklightValues">
         <item>0</item>
@@ -106,6 +100,8 @@
     <!-- Component name of the service providing geocoder API support. -->
     <string name="config_geocodeProvider">com.google.android.location.GeocodeProvider</string>
 
+    <!-- Control whether status bar should distinguish HSPA data icon form UMTS data icon on devices. -->
+    <bool name="config_hspa_data_distinguishable">true</bool> 
 
     <!-- XXXXX NOTE THE FOLLOWING RESOURCES USE THE WRONG NAMING CONVENTION.
          Please don't copy them, copy anything else. -->
@@ -134,8 +130,7 @@
     <!-- Regex array of allowable upstream ifaces for tethering - for example if you want
          tethering on a new interface called "foo2" add <item>"foo\\d"</item> to the array -->
     <string-array translatable="false" name="config_tether_upstream_regexs">
-        <item>"rmnet\\d"</item>
-        <item>"eth\\d"</item>
+        <item>"pdp\\d"</item>
     </string-array>
 
     <!-- List of regexpressions describing the interface (if any) that represent tetherable
@@ -143,8 +138,8 @@
          should be empty.  An example would be "softap.*" -->
     <string-array translatable="false" name="config_tether_wifi_regexs">
         <item>"wl0.1"</item>
+        <item>"softap.*"</item>
     </string-array>
-
 
     <!-- Boolean indicating if we require the use of DUN on mobile for tethering -->
     <bool translatable="false" name="config_tether_dun_required">false</bool>
@@ -154,16 +149,5 @@
         <item>30</item>
     </integer-array>
 
-    <!-- Vibrator pattern for feedback about booting with safe mode disabled -->
-    <integer-array name="config_safeModeDisabledVibePattern">
-        <item>1</item>
-    </integer-array>
 
-    <!-- crespo doesn't handle this blur effect very quickly. -->
-    <bool name="config_sf_slowBlur">true</bool>
-
-
-    <!-- Boolean indicating if restoring network selection should be skipped -->
-    <!-- The restoring is handled by modem if it is true -->
-    <bool translatable="false" name="skip_restoring_network_selection">true</bool>
 </resources>

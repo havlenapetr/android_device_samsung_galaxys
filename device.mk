@@ -47,26 +47,29 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
+	device/samsung/galaxys/init.smdkc110.rc:root/init.smdkc110.rc \
 	device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
-        device/samsung/galaxys/recovery.rc:root/recovery.rc
+        device/samsung/galaxys/init.rc:root/init.rc \
+        device/samsung/galaxys/recovery.rc:root/recovery.rc \
+        device/samsung/galaxys/lpm.rc:root/lpm.rc \
+        device/samsung/galaxys/fota.rc:root/fota.rc \
+        device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
 # Recovery Files
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/init.aries.rc:recovery/root/init.aries.rc \
+	device/samsung/galaxys/init.smdkc110.rc:recovery/root/init.smdkc110.rc \
 	device/samsung/galaxys/ueventd.aries.rc:recovery/root/ueventd.aries.rc \
         device/samsung/galaxys/recovery.rc:recovery/root/recovery.rc
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
-	device/samsung/crespo/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
-	device/samsung/crespo/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
-	device/samsung/crespo/sec_jack.kl:system/usr/keylayout/sec_jack.kl
+	device/samsung/galaxys/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
+	device/samsung/galaxys/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl \
+	device/samsung/galaxys/sec_jack.kl:system/usr/keylayout/sec_jack.kl
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
-	s3c-keypad.kcm \
-	cypress-touchkey.kcm
+	s3c-keypad.kcm
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
@@ -102,22 +105,19 @@ PRODUCT_COPY_FILES += \
 
 # apns config file
 PRODUCT_COPY_FILES += \
-        vendor/cyanogen/prebuilt/common/etc/apns-conf.xml:system/etc/apns-conf.xml
+        device/samsung/galaxys/apns-conf.xml:system/etc/apns-conf.xml
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
-	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
-	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
-	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
-	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
-        frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
-	frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
-	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-	frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
-	frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
-	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
-	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
-	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
+    frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
+    frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
+    frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+    frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+    frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+    frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+    frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+    frameworks/base/data/etc/android.hardware.touchscreen.multitouch.distinct.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.distinct.xml
+
 
 # The OpenGL ES API level that is natively supported by this device.
 # This is a 16.16 fixed point number
