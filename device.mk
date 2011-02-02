@@ -48,9 +48,7 @@ PRODUCT_COPY_FILES := \
 # Init files
 PRODUCT_COPY_FILES += \
 	device/samsung/galaxys/init.smdkc110.rc:root/init.smdkc110.rc \
-	device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
         device/samsung/galaxys/init.rc:root/init.rc \
-        device/samsung/galaxys/recovery.rc:root/recovery.rc \
         device/samsung/galaxys/lpm.rc:root/lpm.rc \
         device/samsung/galaxys/fota.rc:root/fota.rc \
         device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
@@ -58,7 +56,6 @@ PRODUCT_COPY_FILES += \
 # Recovery Files
 PRODUCT_COPY_FILES += \
 	device/samsung/galaxys/init.smdkc110.rc:recovery/root/init.smdkc110.rc \
-	device/samsung/galaxys/ueventd.aries.rc:recovery/root/ueventd.aries.rc \
         device/samsung/galaxys/recovery.rc:recovery/root/recovery.rc
 
 # Prebuilt kl keymaps
