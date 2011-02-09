@@ -91,6 +91,7 @@ PRODUCT_PACKAGES += \
 	lights.s5pc110 \
 	overlay.s5pc110 \
 	sensors.aries
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \

@@ -281,6 +281,9 @@ loglevel 3
     chmod 0662 /dev/log/system
 
 on boot
+# check if we should boot from sdcard
+    import /data/local/user.rc
+
 # basic network init
     ifup lo
     hostname localhost
@@ -450,6 +453,15 @@ on boot
 
 ## Daemon processes to be run by init.
 ##
+# support sdcard booting
+#on property:ro.boot.sdcard=1
+#    mkdir /mnt/secure/sdroot 0755 root root
+#    mount vfat /dev/block/mmcblk1p1 /mnt/secure/sdroot rw check=no
+#    mount vfat /mnt/secure/sdroot/android_boot/system /system ro remount
+#    mount vfat /mnt/secure/sdroot/android_boot/data /data nosuid nodev check=no remount
+#    mount vfat /mnt/secure/sdroot/android_boot/dbdata /dbdata nosuid nodev check=no remount
+#    mount vfat /mnt/secure/sdroot/android_boot/cache /cache nosuid nodev check=no remount
+
 service console /system/bin/sh
     user shell
     group shell system log
