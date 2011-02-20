@@ -25,7 +25,7 @@
 
 #include <hardware_legacy/AudioHardwareBase.h>
 
-#include "secril-client.h"
+//#include "secril-client.h"
 
 extern "C" {
     struct pcm;
@@ -66,7 +66,8 @@ namespace android {
 // Default audio input buffer size in bytes (8kHz mono)
 #define AUDIO_HW_IN_PERIOD_BYTES ((AUDIO_HW_IN_PERIOD_SZ*sizeof(int16_t))/8)
 
-#define INPUT_SOURCE_KEY "Input Source"
+//#define INPUT_SOURCE_KEY "Input Source"
+//#define VIOCE_MEMO_PATH_KEY "Voice Memo Path"
 
 class AudioHardware : public AudioHardwareBase
 {
@@ -108,10 +109,12 @@ public:
             const char *getOutputRouteFromDevice(uint32_t device);
             const char *getInputRouteFromDevice(uint32_t device);
             const char *getVoiceRouteFromDevice(uint32_t device);
+  //          const char *getMicPathFromDevice();
 
             status_t setIncallPath_l(uint32_t device);
+            status_t setVoiceMemoPath_l(String8 path);
 
-            status_t setInputSource_l(String8 source);
+//            status_t setInputSource_l(String8 source);
 
     static uint32_t    getInputSampleRate(uint32_t sampleRate);
            sp <AudioStreamInALSA> getActiveInput_l();
@@ -144,6 +147,7 @@ private:
 
     String8         mInputSource;
     bool            mBluetoothNrec;
+/*
     void*           mSecRilLibHandle;
     HRilClient      mRilClient;
     bool            mActivatedCP;
@@ -157,7 +161,7 @@ private:
     int             (*setCallClockSync)(HRilClient, SoundClockCondition);
     void            loadRILD(void);
     status_t        connectRILDIfRequired(void);
-
+*/
     //  trace driver operations for dump
     int             mDriverOp;
 
