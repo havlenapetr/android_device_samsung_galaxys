@@ -43,6 +43,17 @@ adb pull /system/lib/hw/sensors.default.so ../../../vendor/$MANUFACTURER/$DEVICE
 adb pull /system/lib/hw/gralloc.default.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/hw/gralloc.default.so
 adb pull /system/lib/hw/gralloc.s5pc110.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/hw/gralloc.s5pc110.so
 
+# yamaha sensor binaries and libs
+adb pull /system/bin/sensorcalibutil_yamaha ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorcalibutil_yamaha
+chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorcalibutil_yamaha
+adb pull /system/bin/sensorserver_yamaha ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorserver_yamaha
+chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorserver_yamaha
+adb pull /system/bin/sensorstatutil_yamaha ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorstatutil_yamaha
+chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/sensorstatutil_yamaha
+adb pull /system/lib/libms3c_yamaha.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libms3c_yamaha.so
+adb pull /system/lib/libsensor_yamaha.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libsensor_yamaha.so
+adb pull /system/lib/libsensor_yamaha_test.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libsensor_yamaha_test.so
+
 adb pull /system/lib/egl/libEGL_POWERVR_SGX540_120.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libEGL_POWERVR_SGX540_120.so
 adb pull /system/lib/egl/libGLESv1_CM_POWERVR_SGX540_120.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libGLESv1_CM_POWERVR_SGX540_120.so
 adb pull /system/lib/egl/libGLESv2_POWERVR_SGX540_120.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/libGLESv2_POWERVR_SGX540_120.so
@@ -145,6 +156,18 @@ adb pull /lib/modules/onedram.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprieta
 adb pull /lib/modules/vibrator.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/modules/vibrator.ko
 adb pull /lib/modules/param.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/modules/param.ko
 
+# efs backup
+mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs
+adb pull /efs/nv_data.bin.md5 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/nv_data.bin.md5
+chmod 700 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/nv_data.bin.md5
+adb pull /efs/nv_data.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/nv_data.bin
+chmod 700 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/nv_data.bin
+mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei
+adb pull /efs/nv_data.bin.md5 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei/mps_code.dat
+chmod 666 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei/mps_code.dat
+adb pull /efs/nv_data.bin.md5 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei/bt.txt
+chmod 666 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei/bt.txt
+
 (cat << EOF) | sed s/__DEVICE__/$DEVICE/g | sed s/__MANUFACTURER__/$MANUFACTURER/g > ../../../vendor/$MANUFACTURER/$DEVICE/device-vendor-blobs.mk
 # Copyright (C) 2010 The Android Open Source Project
 #
@@ -222,6 +245,15 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/nvram_net.txt:system/etc/wifi/nvram_net.txt \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/wifi.conf:system/etc/wifi/wifi.conf \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf
+
+# Files for yamaha sensor
+PRODUCT_COPY_FILES += \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/sensorcalibutil_yamaha:system/bin/sensorcalibutil_yamaha \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/sensorserver_yamaha:system/bin/sensorserver_yamaha \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/sensorstatutil_yamaha:system/bin/sensorstatutil_yamaha \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libms3c_yamaha.so:system/lib/libms3c_yamaha.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsensor_yamaha.so:system/lib/libsensor_yamaha.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsensor_yamaha_test.so:system/lib/libsensor_yamaha_test.so
 
 # Files for battery charging screen
 PRODUCT_COPY_FILES += \\
