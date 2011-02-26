@@ -92,6 +92,16 @@ PRODUCT_PACKAGES += \
 	overlay.s5pc110 \
 	sensors.aries
 
+# render script and LiveWallpapers apps
+PRODUCT_PACKAGES += \
+        librs_jni \
+        LiveWallpapers \
+        LiveWallpapersPicker
+
+# fm radio app
+PRODUCT_PACKAGES += \
+        FM
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
@@ -126,24 +136,35 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
+       ro.sf.lcd_density=240 \
+       rild.libpath=/system/lib/libsec-ril.so \
+       rild.libargs=-d /dev/ttyS0 \
        wifi.interface=eth0 \
        wifi.supplicant_scan_interval=15 \
+       ro.wifi.channels=13 \
+       ro.url.safetylegal= \
        dalvik.vm.heapsize=32m
 
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
 PRODUCT_PROPERTY_OVERRIDES += \
-        ro.com.google.locationfeatures=1 \
-        ro.com.google.networklocation=1
+       ro.com.google.locationfeatures=1 \
+       ro.com.google.networklocation=1
+
+# For GPS
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.gps.soket = /data/gpspipe
+
+# For FM-Radio
+PRODUCT_PROPERTY_OVERRIDES += \
+    fmradio.device = fmradio
+
+# For RIL
+PRODUCT_PROPERTY_OVERRIDES += \
+    phone.ril.classname = com.android.internal.telephony.SamsungRIL
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
-
-# Screen density is actually considered a locale (since it is taken into account
-# the the build-time selection of resources). The product definitions including
-# this file must pay attention to the fact that the first entry in the final
-# PRODUCT_LOCALES expansion must not be a density.
-PRODUCT_LOCALES := hdpi
 
 PRODUCT_COPY_FILES += \
 	device/samsung/galaxys/bcm4329.ko:system/modules/bcm4329.ko
