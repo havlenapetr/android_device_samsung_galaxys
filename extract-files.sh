@@ -187,7 +187,6 @@ chmod 666 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/imei/bt.txt
 
 # Prebuilt libraries that are needed to build open-source libraries
 PRODUCT_COPY_FILES := \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libgps.so:obj/lib/libgps.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libcamera.so:obj/lib/libcamera.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libs3cjpeg.so:obj/lib/libs3cjpeg.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvout.so:obj/lib/libtvout.so
