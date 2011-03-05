@@ -166,17 +166,17 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
 
-PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/bcm4329.ko:system/modules/bcm4329.ko
+#PRODUCT_COPY_FILES += \
+#	device/samsung/galaxys/bcm4329.ko:system/modules/bcm4329.ko
 
-ifeq ($(TARGET_PREBUILT_KERNEL),)
-LOCAL_KERNEL := device/samsung/galaxys/kernel
-else
-LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
-endif
+#ifeq ($(TARGET_PREBUILT_KERNEL),)
+#LOCAL_KERNEL := device/samsung/galaxys/kernel
+#else
+#LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
+#endif
 
-PRODUCT_COPY_FILES += \
-    $(LOCAL_KERNEL):kernel
+#PRODUCT_COPY_FILES += \
+#    $(LOCAL_KERNEL):kernel
 
 # See comment at the top of this file. This is where the other
 # half of the device-specific product definition file takes care
