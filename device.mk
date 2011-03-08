@@ -49,6 +49,7 @@ PRODUCT_COPY_FILES := \
 PRODUCT_COPY_FILES += \
 	device/samsung/galaxys/init.smdkc110.rc:root/init.smdkc110.rc \
         device/samsung/galaxys/init.rc:root/init.rc \
+        device/samsung/galaxys/init.rc:root/preinit.rc \
         device/samsung/galaxys/lpm.rc:root/lpm.rc \
         device/samsung/galaxys/fota.rc:root/fota.rc \
         device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
