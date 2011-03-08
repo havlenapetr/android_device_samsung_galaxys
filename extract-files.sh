@@ -156,6 +156,9 @@ adb pull /lib/modules/onedram.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprieta
 adb pull /lib/modules/vibrator.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/modules/vibrator.ko
 adb pull /lib/modules/param.ko ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/modules/param.ko
 
+adb pull /system/bin/BCM4329B1_002.002.023.0417.0430.hcd ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/BCM4329B1_002.002.023.0417.0430.hcd
+chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/BCM4329B1_002.002.023.0417.0430.hcd
+
 # efs backup
 mkdir -p ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs
 adb pull /efs/nv_data.bin.md5 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/efs/nv_data.bin.md5
@@ -244,6 +247,10 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/nvram_net.txt:system/etc/wifi/nvram_net.txt \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/wifi.conf:system/etc/wifi/wifi.conf \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/wifi/wpa_supplicant.conf:system/etc/wifi/wpa_supplicant.conf
+
+# Bluetooth hcd file
+PRODUCT_COPY_FILES += \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/BCM4329B1_002.002.023.0417.0430.hcd:system/bin/BCM4329B1_002.002.023.0417.0430.hcd
 
 # Files for yamaha sensor
 PRODUCT_COPY_FILES += \\
