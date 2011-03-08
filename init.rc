@@ -12,8 +12,8 @@ loglevel 3
     export ANDROID_ASSETS /system/app
     export ANDROID_DATA /data
 
-    export INTERNAL_STORAGE /mnt/sdcard
-    export EXTERNAL_STORAGE /mnt/sdcard/external_sd
+    export EXTERNAL_STORAGE /mnt/sdcard
+    export INTERNAL_STORAGE /mnt/emmc
     export ASEC_MOUNTPOINT /mnt/asec
 
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar
@@ -41,6 +41,7 @@ loglevel 3
 # create mountpoints
     mkdir /mnt 0775 root system
     mkdir /mnt/sdcard 0000 system system
+    mkdir /mnt/emmc 0000 system system
 
 # Create cgroup mount point for cpu accounting
     mkdir /acct
@@ -60,13 +61,14 @@ loglevel 3
 
 # Backwards Compat - XXX: Going away in G*
     symlink /mnt/sdcard /sdcard
-
-    mkdir /system
-    mkdir /data 0771 system system
+    symlink /mnt/emmc /emmc
+    
+    #mkdir /system
+    #mkdir /data 0771 system system
     mkdir /efs 0771 system system
     chown system system /efs
     chmod 0771 /efs
-    mkdir /cache 0770 system cache
+    #mkdir /cache 0770 system cache
     mkdir /config 0500 root root
 
     # Directory for putting things only root should see.
@@ -113,21 +115,21 @@ loglevel 3
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
     #mount yaffs2 mtd@system /system
-    mount rfs /dev/block/stl9 /system ro check=no
+    #mount rfs /dev/block/stl9 /system ro check=no
     #mount yaffs2 mtd@system /system ro remount
 
     # We chown/chmod /data again so because mount is run as root + defaults
     # mount yaffs2 mtd@userdata /data nosuid nodev
 # use movinand second partition as /data. d.moskvitin
 	#exec apply_system_policy /dev/block/stl10
-    exec apply_disk_policy
-    mkdir /data
-    mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
+    #exec apply_disk_policy
+    #mkdir /data
+    #mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
     chown system system /data
     chmod 0771 /data
 
-    mkdir /dbdata
-    mount rfs /dev/block/stl10 /dbdata nosuid nodev check=no
+    #mkdir /dbdata
+    #mount rfs /dev/block/stl10 /dbdata nosuid nodev check=no
     chown system system /dbdata
     chmod 0771 /dbdata
     chmod 0771 /dbdata
@@ -159,7 +161,7 @@ loglevel 3
 
     # Same reason as /data above
     #mount yaffs2 mtd@cache /cache nosuid nodev
-    mount rfs /dev/block/stl11 /cache nosuid nodev check=no
+    #mount rfs /dev/block/stl11 /cache nosuid nodev check=no
     chown system cache /cache
     chmod 0770 /cache
 
@@ -245,7 +247,6 @@ loglevel 3
     chown radio radio /dev/onedram_rfs
     chown radio radio /dev/multipdp
 
-
 # mount modules
 # insmod /lib/modules/dpram.ko
 # insmod /lib/modules/multipdp.ko
@@ -275,15 +276,12 @@ loglevel 3
 
     # video play for m.youtube.com
     mkdir /data/data/.youtube 0777
-    
+
     mount rootfs rootfs / ro remount
     chmod 0662 /dev/log/events
     chmod 0662 /dev/log/system
 
 on boot
-# check if we should boot from sdcard
-    import /data/local/user.rc
-
 # basic network init
     ifup lo
     hostname localhost
@@ -322,11 +320,9 @@ on boot
     setprop ro.HIDDEN_APP_MEM 10240
     setprop ro.CONTENT_PROVIDER_MEM 11264
     setprop ro.EMPTY_APP_MEM 12288
-
-
 	
-	setprop wifi.interface "eth0"
-	setprop ro.bt.bdaddr_path "/data/misc/bluetooth/bt_addr"
+    setprop wifi.interface "eth0"
+    setprop ro.bt.bdaddr_path "/data/misc/bluetooth/bt_addr"
 
 # Write value must be consistent with the above properties.
 # Note that the driver only supports 6 slots, so we have HOME_APP at the
@@ -354,14 +350,14 @@ on boot
     chown radio system /sys/power/state
     chown radio system /sys/power/wake_lock
     chown radio system /sys/power/wake_unlock
-	chown radio system /sys/power/dvfslock_ctrl     
+    chown radio system /sys/power/dvfslock_ctrl     
     chmod 0660 /sys/power/state
     chmod 0660 /sys/power/wake_lock
     chmod 0660 /sys/power/wake_unlock
-	chmod 0660 /sys/power/dvfslock_ctrl    		
+    chmod 0660 /sys/power/dvfslock_ctrl    		
     chown system system /sys/class/timed_output/vibrator/enable
     chown system system /sys/class/leds/keyboard-backlight/brightness
-#    chown system system /sys/class/leds/lcd-backlight/brightness
+#   chown system system /sys/class/leds/lcd-backlight/brightness
     chown system system /sys/class/backlight/s5p_bl/brightness
     chown system system /sys/class/leds/button-backlight/brightness
     chown system system /sys/class/leds/jogball-backlight/brightness
@@ -453,15 +449,6 @@ on boot
 
 ## Daemon processes to be run by init.
 ##
-# support sdcard booting
-#on property:ro.boot.sdcard=1
-#    mkdir /mnt/secure/sdroot 0755 root root
-#    mount vfat /dev/block/mmcblk1p1 /mnt/secure/sdroot rw check=no
-#    mount vfat /mnt/secure/sdroot/android_boot/system /system ro remount
-#    mount vfat /mnt/secure/sdroot/android_boot/data /data nosuid nodev check=no remount
-#    mount vfat /mnt/secure/sdroot/android_boot/dbdata /dbdata nosuid nodev check=no remount
-#    mount vfat /mnt/secure/sdroot/android_boot/cache /cache nosuid nodev check=no remount
-
 service console /system/bin/sh
     user shell
     group shell system log
@@ -488,17 +475,15 @@ on property:persist.service.adb.enable=0
 
 # 3D init
 service pvrsrvinit /system/bin/pvrsrvinit
-   user root
-   group root
-   oneshot
+    user root
+    group root
+    oneshot
  
 service servicemanager /system/bin/servicemanager
     user system
     critical
     onrestart restart zygote
     onrestart restart media
-
-#magnetic sensor yamaha
     onrestart restart sensor-daemon
 
 service vold /system/bin/vold
@@ -515,8 +500,6 @@ service netd /system/bin/netd
 
 service debuggerd /system/bin/debuggerd
 
-# service efs-daemon /system/bin/efsd
-
 service ril-daemon /system/bin/rild
     socket rild stream 660 root radio
     socket rild-debug stream 660 radio system
@@ -528,8 +511,8 @@ service DR-deamon /system/bin/drexe
     group system radio inet net_raw
 	
 service mobex-daemon /system/bin/npsmobex
-	user system
-	group system inet
+    user system
+    group system inet
 
 service glgps /system/bin/gpsd/glgps_samsungJupiter -c /system/etc/jupiter.xml
     user system
@@ -553,11 +536,11 @@ service killmediaserver /system/bin/killmediaserver
     oneshot
 #to prevent lockup issue during poweron/off test
 
-#service bootanim /system/bin/bootanimation
-#    user graphics
-#    group graphics
-#    disabled
-#    oneshot
+service bootanim /system/bin/bootanimation
+    user graphics
+    group graphics
+    disabled
+    oneshot
 
 service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/wifi/bcm_supp.conf
    disabled
@@ -582,28 +565,12 @@ service dbus /system/bin/dbus-daemon --system --nofork
     user bluetooth
     group bluetooth net_bt_admin
 
-# +++++++++++++++++++++++++++++++++++++++++++
-# for Broadcom Bluetooth
- # Start BTLD -----------------------------------------
-service btld /system/bin/logwrapper /system/bin/btld -hb 3000000 -hp /dev/s3c2410_serial0 -lpm 1
-    # init.rc does not yet support applying capabilities, so run as root and
-    # let btld drop uid to bluetooth with the right linux capabilities
+service hciattach /system/bin/brcm_patchram_plus -d --enable_hci --baudrate 3000000 \
+    --patchram /system/bin/BCM4329B1_002.002.023.0417.0430.hcd /dev/s3c2410_serial0
+    user bluetooth
     group bluetooth net_bt_admin
     disabled
-    oneshot
 
-# Start DTUN OBEXD  -----------------------------------------
-service obexd /system/bin/logwrapper /system/bin/obexd
-    #socket bluetooth stream 660 bluetooth bluetooth
-    #socket dbus_bluetooth stream 660 bluetooth bluetooth
-    # init.rc does not yet support applying capabilities, so run as root and
-    # let obexd drop uid to bluetooth with the right linux capabilities
-    user root
-    group bluetooth net_bt_admin
-    disabled
-    oneshot
-
- # Start BLUETOOTHD  -----------------------------------------
 service bluetoothd /system/bin/logwrapper /system/bin/bluetoothd -n -d 
     socket bluetooth stream 660 bluetooth bluetooth
     socket dbus_bluetooth stream 660 bluetooth bluetooth
@@ -611,7 +578,6 @@ service bluetoothd /system/bin/logwrapper /system/bin/bluetoothd -n -d
     # let bludtoothd drop uid to bluetooth with the right linux capabilities
     group bluetooth net_bt_admin misc
     disabled
-# +++++++++++++++++++++++++++++++++++++++++++
 
 service hfag /system/bin/sdptool add --channel=10 HFAG
     user bluetooth
@@ -644,9 +610,9 @@ service flash_recovery /system/etc/install-recovery.sh
     oneshot
 
 #magnetic sensor yamaha
-	service sensor-daemon /system/bin/sensorserver_yamaha
-	user compass
-	group system
+service sensor-daemon /system/bin/sensorserver_yamaha
+    user compass
+    group system
 
 service racoon /system/bin/racoon
     socket racoon stream 600 system system
@@ -670,21 +636,16 @@ service keystore /system/bin/keystore /data/misc/keystore
 service immvibed /system/bin/immvibed
     user shell
     group shell
-	oneshot
+    oneshot
 
 service immvbsd /system/bin/immvbsd
-	oneshot
+    oneshot
 
 service tvout /system/bin/tvoutserver
-user system
-group system
-
+    user system
+    group system
 
 service dumpstate /system/bin/dumpstate -s
     socket dumpstate stream 0660 shell log
     disabled
     oneshot
-
-# Test command for stress test
-#service dfta /system/bin/sh /sbin/dfta.sh
-#  oneshot
