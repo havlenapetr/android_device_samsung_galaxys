@@ -8,13 +8,13 @@ LOCAL_SRC_FILES := \
 	library_register.c
 
 LOCAL_PRELINK_MODULE := false
-LOCAL_MODULE := libOMX.SEC.AVC.Decoder
+LOCAL_MODULE := libOMX.SEC.AVC.Decoder.aries
 
 LOCAL_CFLAGS :=
 
 LOCAL_ARM_MODE := arm
 
-LOCAL_STATIC_LIBRARIES := libSEC_OMX_Vdec libsecosal libsecbasecomponent libsecmfcdecapi
+LOCAL_STATIC_LIBRARIES := libSEC_OMX_Vdec.aries libsecosal.aries libsecbasecomponent.aries libsecmfcdecapi.aries
 LOCAL_SHARED_LIBRARIES := libc libdl libcutils libutils
 
 LOCAL_C_INCLUDES := $(SEC_OMX_INC)/khronos \

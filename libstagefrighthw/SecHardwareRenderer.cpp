@@ -24,7 +24,7 @@
 #include <surfaceflinger/ISurface.h>
 #include <ui/Overlay.h>
 
-#include "hardware/hardware.h"
+#include <hardware/hardware.h>
 
 #include "v4l2_utils.h"
 #include "utils/Timers.h"

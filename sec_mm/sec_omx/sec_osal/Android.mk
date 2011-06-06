@@ -15,7 +15,7 @@ LOCAL_SRC_FILES := \
 	SEC_OSAL_Log.c
 
 LOCAL_PRELINK_MODULE := false
-LOCAL_MODULE := libsecosal
+LOCAL_MODULE := libsecosal.aries
 
 LOCAL_CFLAGS :=
 

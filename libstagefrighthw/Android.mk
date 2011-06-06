@@ -1,4 +1,3 @@
-
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -10,7 +9,7 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS += $(PV_CFLAGS_MINUS_VISIBILITY)
 
 LOCAL_C_INCLUDES:= \
-      $(LOCAL_PATH)/../include/openmax \
+      $(TOP)/frameworks/base/include/media/stagefright/openmax \
       $(LOCAL_PATH)/../include \
       $(LOCAL_PATH)/../liboverlay
 
@@ -25,7 +24,4 @@ LOCAL_SHARED_LIBRARIES :=    \
 LOCAL_MODULE := libstagefrighthw
 
 LOCAL_MODULE_TAGS := optional
-
 include $(BUILD_SHARED_LIBRARY)
-
-

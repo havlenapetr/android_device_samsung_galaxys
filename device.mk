@@ -14,11 +14,11 @@
 
 
 # This file is the device-specific product definition file for
-# crespo. It lists all the overlays, files, modules and properties
+# galaxys. It lists all the overlays, files, modules and properties
 # that are specific to this hardware: i.e. those are device-specific
 # drivers, configuration files, settings, etc...
 
-# Note that crespo is not a fully open device. Some of the drivers
+# Note that galaxies is not a fully open device. Some of the drivers
 # aren't publicly available in all circumstances, which means that some
 # of the hardware capabilities aren't present in builds where those
 # drivers aren't available. Such cases are handled by having this file
@@ -42,32 +42,31 @@ DEVICE_PACKAGE_OVERLAYS := device/samsung/galaxys/overlay
 
 # These are the hardware-specific configuration files
 PRODUCT_COPY_FILES := \
+	device/samsung/galaxys/asound.conf:system/etc/asound.conf \
 	device/samsung/galaxys/vold.fstab:system/etc/vold.fstab \
 	device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg
 
 # Init files
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/init.smdkc110.rc:root/init.smdkc110.rc \
-        device/samsung/galaxys/init.rc:root/init.rc \
-        device/samsung/galaxys/init.rc:root/preinit.rc \
+        device/samsung/galaxys/init.aries.rc:root/init.rc \
+        device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
+        device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
         device/samsung/galaxys/lpm.rc:root/lpm.rc \
         device/samsung/galaxys/fota.rc:root/fota.rc \
         device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
-# Recovery Files
-PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/init.smdkc110.rc:recovery/root/init.smdkc110.rc \
-        device/samsung/galaxys/recovery.rc:recovery/root/recovery.rc
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl \
-	device/samsung/galaxys/melfas-touchkey.kl:system/usr/keylayout/melfas-touchkey.kl \
-	device/samsung/galaxys/sec_jack.kl:system/usr/keylayout/sec_jack.kl
+	device/samsung/galaxys/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
+	device/samsung/galaxys/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
+	device/samsung/galaxys/aries-keypad.kl:system/usr/keylayout/aries-keypad.kl \
+	device/samsung/galaxys/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
-	s3c-keypad.kcm
+       cypress-touchkey.kcm \
+       s3c-keypad.kcm
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
@@ -81,36 +80,22 @@ PRODUCT_COPY_FILES += \
 
 # These are the OpenMAX IL modules
 PRODUCT_PACKAGES += \
-	libSEC_OMX_Core \
-	libOMX.SEC.AVC.Decoder \
-	libOMX.SEC.M4V.Decoder \
-	libOMX.SEC.M4V.Encoder \
-	libOMX.SEC.AVC.Encoder
+	libSEC_OMX_Core.aries \
+	libOMX.SEC.AVC.Decoder.aries \
+	libOMX.SEC.M4V.Decoder.aries \
+	libOMX.SEC.M4V.Encoder.aries \
+	libOMX.SEC.AVC.Encoder.aries
 
 # Misc other modules
 PRODUCT_PACKAGES += \
-	lights.s5pc110 \
-	overlay.s5pc110 \
+	lights.aries \
+	overlay.aries \
 	sensors.aries
-
-# render script and LiveWallpapers apps
-PRODUCT_PACKAGES += \
-        librs_jni \
-        LiveWallpapers \
-        LiveWallpapersPicker
-
-# fm radio app
-PRODUCT_PACKAGES += \
-        FM
 
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw
-
-# Input device calibration files
-PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
 
 # apns config file
 PRODUCT_COPY_FILES += \
@@ -118,15 +103,18 @@ PRODUCT_COPY_FILES += \
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
-    frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
-    frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
-    frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
-    frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
-    frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-    frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
-    frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
-    frameworks/base/data/etc/android.hardware.touchscreen.multitouch.distinct.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.distinct.xml
-
+	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
+	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
+	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
+	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+        frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
+	frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+	frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+	frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 # The OpenGL ES API level that is natively supported by this device.
 # This is a 16.16 fixed point number
@@ -137,50 +125,52 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
-       ro.sf.lcd_density=240 \
-       rild.libpath=/system/lib/libsec-ril.so \
-       rild.libargs=-d /dev/ttyS0 \
        wifi.interface=eth0 \
-       wifi.supplicant_scan_interval=15 \
-       ro.wifi.channels=13 \
-       ro.url.safetylegal= \
+       wifi.supplicant_scan_interval=20 \
+       ro.telephony.ril_class=samsung \
+       mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
        dalvik.vm.heapsize=32m
 
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
 PRODUCT_PROPERTY_OVERRIDES += \
-       ro.com.google.locationfeatures=1 \
-       ro.com.google.networklocation=1
+        ro.com.google.locationfeatures=1 \
+        ro.com.google.networklocation=1
 
-# For GPS
+# Extended JNI checks
+# The extended JNI checks will cause the system to run more slowly, but they can spot a variety of nasty bugs 
+# before they have a chance to cause problems.
+# Default=true for development builds, set by android buildsystem.
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.gps.soket = /data/gpspipe
-
-# For FM-Radio
-PRODUCT_PROPERTY_OVERRIDES += \
-    fmradio.device = fmradio
-
-# For RIL
-PRODUCT_PROPERTY_OVERRIDES += \
-    phone.ril.classname = com.android.internal.telephony.SamsungRIL
+    ro.kernel.android.checkjni=0 \
+    dalvik.vm.checkjni=false
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
 
-#PRODUCT_COPY_FILES += \
-#	device/samsung/galaxys/bcm4329.ko:system/modules/bcm4329.ko
+# Screen density is actually considered a locale (since it is taken into account
+# the the build-time selection of resources). The product definitions including
+# this file must pay attention to the fact that the first entry in the final
+# PRODUCT_LOCALES expansion must not be a density.
+PRODUCT_LOCALES := hdpi
 
-#ifeq ($(TARGET_PREBUILT_KERNEL),)
-#LOCAL_KERNEL := device/samsung/galaxys/kernel
-#else
-#LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
-#endif
+# kernel modules
+PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/bcm4329.ko:system/lib/modules/bcm4329.ko \
+    device/samsung/galaxys/cifs.ko:system/lib/modules/cifs.ko \
+    device/samsung/galaxys/tun.ko:system/lib/modules/tun.ko
 
-#PRODUCT_COPY_FILES += \
-#    $(LOCAL_KERNEL):kernel
+ifeq ($(TARGET_PREBUILT_KERNEL),)
+    LOCAL_KERNEL := device/samsung/galaxys/kernel
+else
+    LOCAL_KERNEL := $(TARGET_PREBUILT_KERNEL)
+endif
+
+PRODUCT_COPY_FILES += \
+    $(LOCAL_KERNEL):kernel
 
 # See comment at the top of this file. This is where the other
 # half of the device-specific product definition file takes care
 # of the aspects that require proprietary drivers that aren't
 # commonly available
-$(call inherit-product-if-exists, vendor/samsung/galaxys/device-vendor.mk)
+$(call inherit-product-if-exists, vendor/samsung/galaxys/galaxys-vendor.mk)
