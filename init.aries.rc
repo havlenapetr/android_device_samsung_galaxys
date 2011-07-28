@@ -6,9 +6,6 @@ on boot
     symlink /mnt/sdcard /sdcard
     symlink /mnt/emmc /emmc
 
-# Include extra init file
-    import /system/etc/init.local.rc
-
 # Run sysinit
     exec /system/bin/sysinit
     
@@ -41,14 +38,23 @@ on boot
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
 on fs
-    mount yaffs2 mtd@system /system
-    mount yaffs2 mtd@cache /cache
-    mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
-    mount yaffs2 mtd@datadata /datadata
+# Include extra init file which contains sdcard boot
+    mkdir /mnt/sdboot 0700 system system
+    mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
+    mount ext4 /mnt/sdboot/system /system bind
+    mount ext4 /mnt/sdboot/data /data bind
+    mount ext4 /mnt/sdboot/datadata /datadata bind
+    mount ext4 /mnt/sdboot/cache /cache bind
+
+    #mount yaffs2 mtd@system /system
+    #mount yaffs2 mtd@cache /cache
+    #mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
+    #mount yaffs2 mtd@datadata /datadata
 
 # We chown/chmod /efs because mount is run as root + defaults
     mkdir /efs 0775 radio radio
-    mount yaffs2 /dev/block/mtdblock4 /efs
+    mount ext4 /mnt/sdboot/efs /efs bind
+    #mount yaffs2 /dev/block/mtdblock4 /efs
     chown radio radio /efs
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
