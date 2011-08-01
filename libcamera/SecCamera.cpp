@@ -670,7 +670,7 @@ int SecCamera::initCamera(int index)
             }
         }
 
-        LOGE("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
+        LOGV("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
 
         ret = fimc_v4l2_querycap(m_cam_fd);
         CHECK(ret);
@@ -725,7 +725,7 @@ int SecCamera::initCamera(int index)
             m_cam_fd2_temp = -1;
         }
 
-        LOGE("initCamera: m_cam_fd2(%d)", m_cam_fd2);
+        LOGV("initCamera: m_cam_fd2(%d)", m_cam_fd2);
 
         ret = fimc_v4l2_querycap(m_cam_fd2);
         CHECK(ret);
