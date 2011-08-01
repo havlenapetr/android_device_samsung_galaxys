@@ -49,8 +49,6 @@ adb pull /system/vendor/lib/libsrv_init.so ../../../vendor/$MANUFACTURER/$DEVICE
 adb pull /system/vendor/lib/libsrv_um.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/vendor/firmware/CE147F02.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/vendor/lib/libusc.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-adb pull /system/vendor/lib/libsensor_yamaha_test.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-adb pull /system/vendor/lib/libsensorservice.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/vendor/bin/orientationd ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/vendor/bin/geomagneticd ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/lib/libActionShot.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
@@ -130,8 +128,6 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsrv_um.so:system/vendor/lib/libsrv_um.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F02.bin:system/vendor/firmware/CE147F02.bin \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libusc.so:system/vendor/lib/libusc.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsensor_yamaha_test.so:system/vendor/lib/libsensor_yamaha_test.so \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsensorservice.so:system/vendor/lib/libsensorservice.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/orientationd:system/vendor/bin/orientationd \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/geomagneticd:system/vendor/bin/geomagneticd
 
