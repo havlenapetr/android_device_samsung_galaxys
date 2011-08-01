@@ -48,7 +48,7 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-        device/samsung/galaxys/init.aries.rc:root/init.rc \
+        device/samsung/galaxys/init.rc:root/init.rc \
         device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
         device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
         device/samsung/galaxys/lpm.rc:root/lpm.rc \
