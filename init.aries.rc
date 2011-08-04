@@ -164,7 +164,7 @@ on post-fs
     chmod 0775 /dev/socket
 
     # symlinks for samsung RIL
-    symlink /system/vendor/firmware/modem.bin /dev/block/bml12
+    symlink /vendor/firmware/modem.bin /dev/block/bml12
 
 
 service gpsd /system/vendor/bin/gpsd -c /vendor/etc/gps.xml
@@ -183,7 +183,11 @@ service wpa_supplicant /system/bin/wpa_supplicant -Dwext -ieth0 -c/data/misc/wif
     disabled
     oneshot
 
-service dhcpcd /system/bin/dhcpcd -ABKL
+service dhcpcd_eth0 /system/bin/dhcpcd -ABKL
+    disabled
+    oneshot
+
+service iprenew_eth0 /system/bin/dhcpcd -n
     disabled
     oneshot
 
