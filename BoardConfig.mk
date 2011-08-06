@@ -65,7 +65,6 @@ BOARD_SECOND_CAMERA_DEVICE := /dev/video2
 
 # FM Radio
 #BOARD_HAVE_FM_RADIO := true
-#BOARD_GLOBAL_CFLAGS += -DHAVE_FM_RADIO
 #BOARD_FM_DEVICE := si4709
 
 # init recovery feature

@@ -92,6 +92,10 @@ PRODUCT_PACKAGES += \
 	overlay.aries \
 	sensors.aries
 
+# fmradio app
+#PRODUCT_PACKAGES += \
+#       FM
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
