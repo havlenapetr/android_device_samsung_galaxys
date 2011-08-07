@@ -96,6 +96,10 @@ PRODUCT_PACKAGES += \
 #PRODUCT_PACKAGES += \
 #       FM
 
+# flac library
+PRODUCT_PACKAGES += \
+        libFLAC
+
 # Libs
 PRODUCT_PACKAGES += \
 	libcamera \
