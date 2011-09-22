@@ -20,8 +20,8 @@ loglevel 9
     export LOOP_MOUNTPOINT /mnt/obb
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/system/framework/core-junit.jar
 
-# symlink /misc to /etc for recovery
-    symlink /misc /etc
+# symlink to /etc for recovery
+    symlink /system/etc /etc
 
 # Backward compatibility
     symlink /sys/kernel/debug /d
@@ -102,6 +102,9 @@ on fs
     mount ext4 /mnt/sdboot/system /system bind
 
 on post-fs
+    # symlink res files for recovery
+    symlink /etc/recovery/res /res
+
     # once everything is setup, no need to modify /
     #mount rootfs rootfs / ro remount
 
@@ -261,7 +264,7 @@ service console /system/bin/sh
 on property:ro.secure=0
     start console
 
-service recovery /system/bin/recovery
+service recovery /system/bin/recovery --show_text
 
 # adbd is controlled by the persist.service.adb.enable system property
 service adbd /sbin/adbd
