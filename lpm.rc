@@ -12,7 +12,7 @@ on init
 	mkdir /mnt/sdboot 0700 system system
 	mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
 	mount ext4 /mnt/sdboot/system /system bind
-	mount ext4 /mnt/sdboot/data /data bind
+	mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
 
 	mkdir /data/log 0777
 	mkdir /data/anr 0777
