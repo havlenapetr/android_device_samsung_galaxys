@@ -6,18 +6,13 @@ on init
 
 	mkdir /system
 	mkdir /data
+	mkdir /mnt
 	mount tmpfs nodev /tmp
-
-	insmod /lib/modules/fsr.ko
-	insmod /lib/modules/fsr_stl.ko
-	insmod /lib/modules/rfs_glue.ko
-	insmod /lib/modules/rfs_fat.ko
  
-	insmod /lib/modules/param.ko 
-	insmod /lib/modules/vibrator.ko
- 
-  	mount rfs /dev/block/stl9 /system check=no
-	mount rfs /dev/block/mmcblk0p2 /data nosuid nodev check=no
+	mkdir /mnt/sdboot 0700 system system
+	mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
+	mount ext4 /mnt/sdboot/system /system bind
+	mount ext4 /mnt/sdboot/data /data bind
 
 	mkdir /data/log 0777
 	mkdir /data/anr 0777
