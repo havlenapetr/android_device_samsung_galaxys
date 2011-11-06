@@ -34,6 +34,8 @@
 #include <linux/videodev2.h>
 #include <videodev2_samsung.h>
 
+#include <binder/MemoryHeapBase.h>
+
 namespace android {
 
 #define TV_DEV_NAME   "/dev/video14"
@@ -107,6 +109,32 @@ struct v4l2_pix_format_s5p_tvout {
     struct v4l2_pix_format pix_fmt;
 };
 
+enum s5p_tv_standart {
+    S5P_TV_STD_NTSC_M = 0,
+	S5P_TV_STD_PAL_BDGHI,
+	S5P_TV_STD_PAL_M,
+	S5P_TV_STD_PAL_N,
+	S5P_TV_STD_PAL_Nc,
+	S5P_TV_STD_PAL_60,
+	S5P_TV_STD_NTSC_443,
+	S5P_TV_STD_480P_60_16_9,
+	S5P_TV_STD_480P_60_4_3,
+	S5P_TV_STD_576P_50_16_9,
+	S5P_TV_STD_576P_50_4_3,
+	S5P_TV_STD_720P_60,
+	S5P_TV_STD_720P_50
+};
+
+// must match with s5p_tv_outputs in s5p_tv_v4l.c
+enum s5p_tv_output {
+    S5P_TV_OUTPUT_TYPE_COMPOSITE = 0,
+    S5P_TV_OUTPUT_TYPE_SVIDEO,
+    S5P_TV_OUTPUT_TYPE_YPBPR_INERLACED,
+    S5P_TV_OUTPUT_TYPE_YPBPR_PROGRESSIVE,
+    S5P_TV_OUTPUT_TYPE_RGB_PROGRESSIVE,
+    S5P_TV_OUTPUT_TYPE_HDMI,
+};
+
 class SecTv {
 
 public:
@@ -115,7 +143,10 @@ public:
     const __u8*     getName();
     int             init(int pixfmt);
     int             init(int pixfmt, const char* dev);
-    
+
+    int             setStandart(s5p_tv_standart standart);
+    int             setOutput(s5p_tv_output output);
+
     int             setWindow(int offset_x, int offset_y, int width, int height);
     int             setCrop(int offset_x, int offset_y, int width, int height);
     int             setFormat(int width, int height, int format);
@@ -142,6 +173,8 @@ private:
 
     bool            mRunning;
     bool            mAudioEnabled;
+
+    sp<MemoryHeapBase>  mRawHeap;
 
     int             enableAudio();
     int             disableAudio();

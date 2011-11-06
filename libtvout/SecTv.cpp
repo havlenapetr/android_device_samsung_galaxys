@@ -40,6 +40,90 @@ using namespace android;
              __func__, __LINE__, strerror(errno));                   \
     }
 
+#define BPP             2
+#define MIN(x, y)       (((x) < (y)) ? (x) : (y))
+
+#define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
+#define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
+#define ALIGN_TO_8KB(x)   ((((x) + (1 << 13) - 1) >> 13) << 13)
+
+struct s5p_tv_standart_internal {
+    int index;
+    unsigned long value;
+} s5p_tv_standards[] = {
+    {
+		S5P_TV_STD_NTSC_M,
+		V4L2_STD_NTSC_M,
+	}, {
+		S5P_TV_STD_PAL_BDGHI,
+		V4L2_STD_PAL_BDGHI,
+	}, {
+		S5P_TV_STD_PAL_M,
+		V4L2_STD_PAL_M,
+	}, {
+		S5P_TV_STD_PAL_N,
+		V4L2_STD_PAL_N,
+	}, {
+		S5P_TV_STD_PAL_Nc,
+		V4L2_STD_PAL_Nc,
+	}, {
+		S5P_TV_STD_PAL_60,
+		V4L2_STD_PAL_60,
+	}, {
+		S5P_TV_STD_NTSC_443,
+		V4L2_STD_NTSC_443,
+	}, {
+		S5P_TV_STD_480P_60_16_9,
+		V4L2_STD_480P_60_16_9,
+	}, {
+		S5P_TV_STD_480P_60_4_3,
+		V4L2_STD_480P_60_4_3,
+	}, {
+		S5P_TV_STD_576P_50_16_9,
+		V4L2_STD_576P_50_16_9,
+	}, {
+		S5P_TV_STD_576P_50_4_3,
+		V4L2_STD_576P_50_4_3,
+	}, {
+		S5P_TV_STD_720P_60,
+		V4L2_STD_720P_60,
+	}, {
+		S5P_TV_STD_720P_50,
+		V4L2_STD_720P_50,
+	},
+};
+
+static inline int calcFrameSize(int format, int width, int height)
+{
+    int size = 0;
+
+    switch (format) {
+        case V4L2_PIX_FMT_YUV420:
+        case V4L2_PIX_FMT_NV12:
+        case V4L2_PIX_FMT_NV21:
+            size = (width * height * 3 / 2);
+            break;
+
+        case V4L2_PIX_FMT_NV12T:
+            size = ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height)) +
+            ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height / 2));
+            break;
+
+        case V4L2_PIX_FMT_YUV422P:
+        case V4L2_PIX_FMT_YUYV:
+        case V4L2_PIX_FMT_UYVY:
+            size = (width * height * 2);
+            break;
+
+        default :
+            LOGE("ERR(%s):Invalid V4L2 pixel format(%d)\n", __func__, format);
+        case V4L2_PIX_FMT_RGB565:
+            size = (width * height * BPP);
+            break;
+    }
+    return size;
+}
+
 static int get_pixel_depth(unsigned int fmt)
 {
     int depth = 0;
@@ -142,6 +226,21 @@ static int tv20_v4l2_s_output(int fp, int index)
     return ret;
 }
 
+static int tv20_v4l2_s_std(int fp, unsigned long id)
+{
+    v4l2_std_id std;
+    int ret;
+
+    std = id;
+
+    ret = ioctl(fp, VIDIOC_S_STD, &std);
+    if (ret < 0) {
+        LOGE("ERR(%s):VIDIOC_S_OUPUT failed\n", __func__);
+        return ret;
+    }
+    return ret;
+}
+
 static int tv20_v4l2_enum_fmt(int fp, unsigned int fmt)
 {
     struct v4l2_fmtdesc fmtdesc;
@@ -168,7 +267,8 @@ static int tv20_v4l2_enum_fmt(int fp, unsigned int fmt)
     return 0;
 }
 
-static int tv20_v4l2_s_fmt(int fp, int width, int height, unsigned int fmt)
+static int tv20_v4l2_s_fmt(int fp, int width, int height,
+                           unsigned int fmt, unsigned int yAddr, unsigned int cAddr)
 {
     struct v4l2_format v4l2_fmt;
     struct v4l2_pix_format_s5p_tvout pixfmt;
@@ -184,8 +284,8 @@ static int tv20_v4l2_s_fmt(int fp, int width, int height, unsigned int fmt)
     pixfmt.pix_fmt.field = V4L2_FIELD_NONE;
 
     // here we must set addresses of our memory for video out
-    pixfmt.base_y = 0;
-    pixfmt.base_c = 0;
+    pixfmt.base_y = (void *)yAddr;
+    pixfmt.base_c = (void* )cAddr;
 
     v4l2_fmt.fmt.pix = pixfmt.pix_fmt;
     memcpy(v4l2_fmt.fmt.raw_data, &pixfmt,
@@ -326,20 +426,13 @@ int SecTv::openTvOut(SecTv** hardware)
     int ret = tv20_v4l2_querycap(fd);
     RETURN_IF(ret);
 
-    LOGV("searching for standart: %i", TV_STANDART_INDEX);
-    if(!tv20_v4l2_enum_standarts(fd, TV_STANDART_INDEX))
-        return -1;
-
-    LOGV("searching for output: %i", TV_DEV_INDEX);
-    if (!tv20_v4l2_enum_output(fd, TV_DEV_INDEX))
-        return -1;
-    
-    LOGV("selecting output: %i", TV_DEV_INDEX);
-    ret = tv20_v4l2_s_output(fd, TV_DEV_INDEX);
-    RETURN_IF(ret);
-
     LOGV("binded to output: %i", TV_DEV_INDEX);
     *hardware = new SecTv(fd, TV_DEV_INDEX);
+
+    ret = (*hardware)->setStandart(S5P_TV_STD_NTSC_M);
+    RETURN_IF(ret);
+    ret = (*hardware)->setOutput(S5P_TV_OUTPUT_TYPE_SVIDEO);
+    RETURN_IF(ret);
 
     return 0;
 }
@@ -351,7 +444,8 @@ SecTv::SecTv(int fd, int index)
       mHeight(-1),
       mFormat(-1),
       mRunning(false),
-      mAudioEnabled(false)
+      mAudioEnabled(false),
+      mRawHeap(NULL)
 {
     mParams = (struct v4l2_window_s5p_tvout*)&mStreamParams.parm.raw_data;
     memset(mParams, 0, sizeof(struct v4l2_window_s5p_tvout));
@@ -361,6 +455,40 @@ SecTv::SecTv(int fd, int index)
 SecTv::~SecTv()
 {
     close(mTvOutFd);
+    if (mRawHeap != NULL) {
+        mRawHeap.clear();
+    }
+}
+
+int SecTv::setStandart(s5p_tv_standart standart)
+{
+    LOGV("%s", __func__);
+    RETURN_IF(mTvOutFd);
+
+    struct s5p_tv_standart_internal std = s5p_tv_standards[(int)standart];
+
+    LOGV("searching for standart: %i", standart);
+    if(!tv20_v4l2_enum_standarts(mTvOutFd, std.index))
+        return -1;
+
+    int ret = tv20_v4l2_s_std(mTvOutFd, std.value);
+    RETURN_IF(ret);
+    return 0;
+}
+
+int SecTv::setOutput(s5p_tv_output output)
+{
+    LOGV("%s", __func__);
+    RETURN_IF(mTvOutFd);
+
+    LOGV("searching for output: %i", output);
+    if (!tv20_v4l2_enum_output(mTvOutFd, output))
+        return -1;
+
+    LOGV("selecting output: %i", output);
+    int ret = tv20_v4l2_s_output(mTvOutFd, output);
+    RETURN_IF(ret);
+    return 0;
 }
 
 int SecTv::setWindow(int offset_x, int offset_y, int width, int height)
@@ -410,7 +538,14 @@ int SecTv::setFormat(int width, int height, int format)
     int ret = tv20_v4l2_enum_fmt(mTvOutFd, format);
     RETURN_IF(ret);
     
-    ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format);
+    if (mRawHeap != NULL) {
+        mRawHeap.clear();
+    }
+    int size = calcFrameSize(width, height, format);
+    mRawHeap = new MemoryHeapBase(size);
+    ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format,
+                          (unsigned int)mRawHeap->base(),
+                          (unsigned int)mRawHeap->base() + 4);
     RETURN_IF(ret);
 
     mWidth = width;
