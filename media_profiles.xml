@@ -78,7 +78,7 @@
 <MediaSettings>
     <!-- Each camcorder profile defines a set of predefined configuration parameters -->
     <CamcorderProfiles cameraId="0">
-        <EncoderProfile quality="hd" fileFormat="mp4" duration="60">
+        <!--EncoderProfile quality="hd" fileFormat="mp4" duration="60">
             <Video codec="h264"
                    bitRate="10000000"
                    width="1280"
@@ -89,7 +89,7 @@
                    bitRate="96000"
                    sampleRate="16000"
                    channels="1" />
-        </EncoderProfile>
+        </EncoderProfile-->
 
         <EncoderProfile quality="high" fileFormat="mp4" duration="60">
             <Video codec="h264"

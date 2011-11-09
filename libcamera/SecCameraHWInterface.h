@@ -20,6 +20,8 @@
 #define ANDROID_HARDWARE_CAMERA_HARDWARE_SEC_H
 
 #include "SecCamera.h"
+#include "SecCameraParameters.h"
+
 #include <utils/threads.h>
 #include <camera/CameraHardwareInterface.h>
 #include <binder/MemoryBase.h>
@@ -74,7 +76,7 @@ private:
     static wp<CameraHardwareInterface> singleton;
 
     static  const int   kBufferCount = MAX_BUFFERS;
-    static  const int   kBufferCountForRecord = MAX_BUFFERS;
+    static  const int   kBufferCountForHd = MAX_BUFFERS_HD;
 
     class PreviewThread : public Thread {
         CameraHardwareSec *mHardware;
@@ -156,6 +158,8 @@ private:
                                    int *pdwJPEGSize, void *pVideo,
                                    int *pdwVideoSize);
             void        setSkipFrame(int frame);
+            bool        isSupportedPreviewSize(const int width,
+                                               const int height) const;
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
@@ -178,8 +182,6 @@ private:
     sp<MemoryHeapBase>  mRawHeap;
     sp<MemoryHeapBase>  mRecordHeap;
     sp<MemoryHeapBase>  mJpegHeap;
-    sp<MemoryBase>      mBuffers[kBufferCount];
-    sp<MemoryBase>      mRecordBuffers[kBufferCountForRecord];
 
             SecCamera   *mSecCamera;
             const __u8  *mCameraSensorName;
@@ -205,6 +207,8 @@ private:
             int         mPostViewWidth;
             int         mPostViewHeight;
             int         mPostViewSize;
+
+            Vector<Size> mSupportedPreviewSizes;
 };
 
 }; // namespace android

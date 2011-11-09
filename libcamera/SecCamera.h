@@ -2,6 +2,7 @@
 **
 ** Copyright 2008, The Android Open Source Project
 ** Copyright 2010, Samsung Electronics Co. LTD
+** Copyright 2011, Havlena Petr <havlenapetr@gmail.com>
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -42,8 +43,6 @@
 
 namespace android {
 
-#define ENABLE_ESD_PREVIEW_CHECK
-
 #if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
 #define LOG_CAMERA LOGD
 #define LOG_CAMERA_PREVIEW LOGD
@@ -69,39 +68,74 @@ namespace android {
 #define LOG_TIME(n)
 #endif
 
-#define MAX_BACK_CAMERA_PREVIEW_WIDTH       720
-#define MAX_BACK_CAMERA_PREVIEW_HEIGHT      480
-#define MAX_BACK_CAMERA_SNAPSHOT_WIDTH      2560
-#define MAX_BACK_CAMERA_SNAPSHOT_HEIGHT     1920
-#define BACK_CAMERA_POSTVIEW_WIDTH          640
-#define BACK_CAMERA_POSTVIEW_WIDE_WIDTH     800
-#define BACK_CAMERA_POSTVIEW_HEIGHT         480
-#define BACK_CAMERA_POSTVIEW_BPP            16
-#define BACK_CAMERA_THUMBNAIL_WIDTH         320
-#define BACK_CAMERA_THUMBNAIL_HEIGHT        240
-#define BACK_CAMERA_THUMBNAIL_BPP           16
+#define JOIN(x, y) JOIN_AGAIN(x, y)
+#define JOIN_AGAIN(x, y) x ## y
 
-#define BACK_CAMERA_FOCAL_LENGTH            379 /* 3.79mm */
+#define FRONT_CAM VGA
+#define BACK_CAM CE147
 
-#define MAX_FRONT_CAMERA_PREVIEW_WIDTH      640
-#define MAX_FRONT_CAMERA_PREVIEW_HEIGHT     480
-#define MAX_FRONT_CAMERA_SNAPSHOT_WIDTH     640
-#define MAX_FRONT_CAMERA_SNAPSHOT_HEIGHT    480
+#if !defined (FRONT_CAM) || !defined(BACK_CAM)
+#error "Please define the Camera module"
+#endif
 
-#define FRONT_CAMERA_THUMBNAIL_WIDTH        160
-#define FRONT_CAMERA_THUMBNAIL_HEIGHT       120
-#define FRONT_CAMERA_THUMBNAIL_BPP          16
-#define FRONT_CAMERA_FOCAL_LENGTH           130 /* 1.3mm */
+#define CE147_PREVIEW_WIDTH             1280
+#define CE147_PREVIEW_HEIGHT            720
+#define CE147_SNAPSHOT_WIDTH            2560
+#define CE147_SNAPSHOT_HEIGHT           1920
+
+#define CE147_POSTVIEW_WIDTH            1280
+#define CE147_POSTVIEW_WIDE_WIDTH       1280
+#define CE147_POSTVIEW_HEIGHT           720
+#define CE147_POSTVIEW_BPP              16
+
+#define CE147_THUMBNAIL_WIDTH           320
+#define CE147_THUMBNAIL_HEIGHT          240
+#define CE147_THUMBNAIL_BPP             16
+
+/* focal length of 3.43mm */
+#define CE147_FOCAL_LENGTH              343
+
+#define VGA_PREVIEW_WIDTH               640
+#define VGA_PREVIEW_HEIGHT              480
+#define VGA_SNAPSHOT_WIDTH              640
+#define VGA_SNAPSHOT_HEIGHT             480
+
+#define VGA_THUMBNAIL_WIDTH             160
+#define VGA_THUMBNAIL_HEIGHT            120
+#define VGA_THUMBNAIL_BPP               16
+
+/* focal length of 0.9mm */
+#define VGA_FOCAL_LENGTH                90
+
+#define MAX_BACK_CAMERA_PREVIEW_WIDTH       JOIN(BACK_CAM,_PREVIEW_WIDTH)
+#define MAX_BACK_CAMERA_PREVIEW_HEIGHT      JOIN(BACK_CAM,_PREVIEW_HEIGHT)
+#define MAX_BACK_CAMERA_SNAPSHOT_WIDTH      JOIN(BACK_CAM,_SNAPSHOT_WIDTH)
+#define MAX_BACK_CAMERA_SNAPSHOT_HEIGHT     JOIN(BACK_CAM,_SNAPSHOT_HEIGHT)
+#define BACK_CAMERA_POSTVIEW_WIDTH          JOIN(BACK_CAM,_POSTVIEW_WIDTH)
+#define BACK_CAMERA_POSTVIEW_WIDE_WIDTH     JOIN(BACK_CAM,_POSTVIEW_WIDE_WIDTH)
+#define BACK_CAMERA_POSTVIEW_HEIGHT         JOIN(BACK_CAM,_POSTVIEW_HEIGHT)
+#define BACK_CAMERA_POSTVIEW_BPP            JOIN(BACK_CAM,_POSTVIEW_BPP)
+#define BACK_CAMERA_THUMBNAIL_WIDTH         JOIN(BACK_CAM,_THUMBNAIL_WIDTH)
+#define BACK_CAMERA_THUMBNAIL_HEIGHT        JOIN(BACK_CAM,_THUMBNAIL_HEIGHT)
+#define BACK_CAMERA_THUMBNAIL_BPP           JOIN(BACK_CAM,_THUMBNAIL_BPP)
+
+#define BACK_CAMERA_FOCAL_LENGTH            JOIN(BACK_CAM,_FOCAL_LENGTH)
+
+#define MAX_FRONT_CAMERA_PREVIEW_WIDTH      JOIN(FRONT_CAM,_PREVIEW_WIDTH)
+#define MAX_FRONT_CAMERA_PREVIEW_HEIGHT     JOIN(FRONT_CAM,_PREVIEW_HEIGHT)
+#define MAX_FRONT_CAMERA_SNAPSHOT_WIDTH     JOIN(FRONT_CAM,_SNAPSHOT_WIDTH)
+#define MAX_FRONT_CAMERA_SNAPSHOT_HEIGHT    JOIN(FRONT_CAM,_SNAPSHOT_HEIGHT)
+
+#define FRONT_CAMERA_THUMBNAIL_WIDTH        JOIN(FRONT_CAM,_THUMBNAIL_WIDTH)
+#define FRONT_CAMERA_THUMBNAIL_HEIGHT       JOIN(FRONT_CAM,_THUMBNAIL_HEIGHT)
+#define FRONT_CAMERA_THUMBNAIL_BPP          JOIN(FRONT_CAM,_THUMBNAIL_BPP)
+#define FRONT_CAMERA_FOCAL_LENGTH           JOIN(FRONT_CAM,_FOCAL_LENGTH)
 
 #define DEFAULT_JPEG_THUMBNAIL_WIDTH        256
 #define DEFAULT_JPEG_THUMBNAIL_HEIGHT       192
 
-#ifndef CAMERA_DEV_NAME
 #define CAMERA_DEV_NAME   "/dev/video0"
-#endif
-#ifndef CAMERA_DEV_NAME2
 #define CAMERA_DEV_NAME2  "/dev/video2"
-#endif
 
 #define CAMERA_DEV_NAME_TEMP "/data/videotmp_000"
 #define CAMERA_DEV_NAME2_TEMP "/data/videotemp_002"
@@ -109,6 +143,8 @@ namespace android {
 
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
+
+#define MAX_BUFFERS_HD  5
 #define MAX_BUFFERS     11
 
 /*
@@ -247,6 +283,7 @@ public:
     status_t dump(int fd, const Vector<String16>& args);
 
     int             flagCreate(void) const;
+
 
     int             getCameraId(void);
 
@@ -410,7 +447,7 @@ public:
     unsigned int    getPhyAddrC(int);
     void            pausePreview();
     int             initCamera(int index);
-    void            DeinitCamera();
+    void            deinitCamera();
     static void     setJpegRatio(double ratio)
     {
         if((ratio < 0) || (ratio > 1))
@@ -521,6 +558,9 @@ private:
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);
+
+    int             startStream();
+    int             stopStream();
 
     void            setExifChangedAttribute();
     void            setExifFixedAttribute();

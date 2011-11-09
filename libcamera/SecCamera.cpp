@@ -1,6 +1,7 @@
 /*
  * Copyright 2008, The Android Open Source Project
  * Copyright 2010, Samsung Electronics Co. LTD
+ * Copyright 2011, Havlena Petr <havlenapetr@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -299,7 +300,7 @@ static int fimc_v4l2_s_fmt_cap(int fp, int width, int height, unsigned int fmt)
 
     v4l2_fmt.fmt.pix = pixfmt;
 
-    LOGV("ori_w %d, ori_h %d, w %d, h %d\n", width, height, v4l2_fmt.fmt.pix.width, v4l2_fmt.fmt.pix.height);
+    //LOGE("ori_w %d, ori_h %d, w %d, h %d\n", width, height, v4l2_fmt.fmt.pix.width, v4l2_fmt.fmt.pix.height);
 
     /* Set up for capture */
     ret = ioctl(fp, VIDIOC_S_FMT, &v4l2_fmt);
@@ -641,35 +642,6 @@ int SecCamera::initCamera(int index)
             return -1;
         }
 
-        if (m_cam_fd < 3) { // for 0, 1, 2
-            LOGE("ERR(%s):m_cam_fd is %d\n", __func__, m_cam_fd);
-
-            close(m_cam_fd);
-
-            m_cam_fd_temp = open(CAMERA_DEV_NAME_TEMP, O_CREAT);
-
-            LOGE("ERR(%s):m_cam_fd_temp is %d\n", __func__, m_cam_fd_temp);
-
-            m_cam_fd = open(CAMERA_DEV_NAME, O_RDWR);
-
-            if (m_cam_fd < 3) { // for 0, 1, 2
-                LOGE("ERR(%s):retring to open %s is failed, %d\n", __func__, CAMERA_DEV_NAME, m_cam_fd);
-
-                if (m_cam_fd < 0) {
-                    return -1;
-                } else {
-                    close(m_cam_fd);
-                    m_cam_fd = -1;
-                }
-
-                if (m_cam_fd_temp != -1){
-                    close(m_cam_fd_temp);
-                    m_cam_fd_temp = -1;
-                }
-                return -1;
-            }
-        }
-
         LOGV("initCamera: m_cam_fd(%d), m_jpeg_fd(%d)", m_cam_fd, m_jpeg_fd);
 
         ret = fimc_v4l2_querycap(m_cam_fd);
@@ -683,46 +655,6 @@ int SecCamera::initCamera(int index)
         if (m_cam_fd2 < 0) {
             LOGE("ERR(%s):Cannot open %s (error : %s)\n", __func__, CAMERA_DEV_NAME2, strerror(errno));
             return -1;
-        }
-        if (m_cam_fd2 < 3) { // for 0, 1, 2
-            LOGE("ERR(%s):m_cam_fd2 is %d\n", __func__, m_cam_fd2);
-
-            close(m_cam_fd2);
-
-            m_cam_fd2_temp = open(CAMERA_DEV_NAME2_TEMP, O_CREAT);
-
-            LOGE("ERR(%s):m_cam_fd2_temp is %d\n", __func__, m_cam_fd2_temp);
-
-            m_cam_fd2 = open(CAMERA_DEV_NAME2, O_RDWR);
-
-            if (m_cam_fd2 < 3) { // for 0, 1, 2
-                LOGE("ERR(%s):retring to open %s is failed, %d\n", __func__, CAMERA_DEV_NAME2, m_cam_fd2);
-
-                if (m_cam_fd2 < 0) {
-                    return -1;
-                }
-                else{
-                    close(m_cam_fd2);
-                    m_cam_fd2 = -1;
-                }
-
-                if (m_cam_fd2_temp != -1) {
-                    close(m_cam_fd2_temp);
-                    m_cam_fd2_temp = -1;
-                }
-
-                return -1;
-            }
-        }
-
-        if (m_cam_fd_temp != -1) {
-            close(m_cam_fd_temp);
-            m_cam_fd_temp = -1;
-        }
-
-        if (m_cam_fd2_temp != -1) {
-            close(m_cam_fd2_temp);
-            m_cam_fd2_temp = -1;
         }
 
         LOGV("initCamera: m_cam_fd2(%d)", m_cam_fd2);
@@ -762,11 +694,11 @@ int SecCamera::initCamera(int index)
 void SecCamera::resetCamera()
 {
     LOGV("%s :", __func__);
-    DeinitCamera();
+    deinitCamera();
     initCamera(m_camera_id);
 }
 
-void SecCamera::DeinitCamera()
+void SecCamera::deinitCamera()
 {
     LOGV("%s :", __func__);
 
@@ -777,13 +709,13 @@ void SecCamera::DeinitCamera()
         /* close m_cam_fd after stopRecord() because stopRecord()
          * uses m_cam_fd to change frame rate
          */
-        LOGI("DeinitCamera: m_cam_fd(%d)", m_cam_fd);
+        LOGV("deinitCamera: m_cam_fd(%d)", m_cam_fd);
         if (m_cam_fd > -1) {
             close(m_cam_fd);
             m_cam_fd = -1;
         }
 
-        LOGI("DeinitCamera: m_cam_fd2(%d)", m_cam_fd2);
+        LOGV("deinitCamera: m_cam_fd2(%d)", m_cam_fd2);
         if (m_cam_fd2 > -1) {
             close(m_cam_fd2);
             m_cam_fd2 = -1;
@@ -811,6 +743,51 @@ int SecCamera::getCameraFd(void)
 
 // ======================================================================
 // Preview
+
+int SecCamera::startStream(void)
+{
+    int ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
+    CHECK(ret);
+
+    // set all stream params manually, because ce147 driver doesn't handle
+    // this in fimc_v4l2_s_parm call
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
+    CHECK(ret);
+    
+    ret = fimc_v4l2_streamon(m_cam_fd);
+    CHECK(ret);
+
+    // these params must be set after streamon
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
+    CHECK(ret);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
+    CHECK(ret);
+
+    return 0;
+}
+
+int SecCamera::stopStream()
+{
+    if (m_params->flash_mode == FLASH_MODE_TORCH)
+        setFlashMode(FLASH_MODE_OFF);
+
+    int ret = fimc_v4l2_streamoff(m_cam_fd);
+    CHECK(ret);
+
+    return 0;
+}
 
 int SecCamera::startPreview(void)
 {
@@ -862,13 +839,10 @@ int SecCamera::startPreview(void)
         CHECK(ret);
     }
 
-    ret = fimc_v4l2_streamon(m_cam_fd);
+    ret = startStream();
     CHECK(ret);
 
     m_flag_camera_start = 1;
-
-    ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
-    CHECK(ret);
 
     if (m_camera_id == CAMERA_ID_FRONT) {
         /* Blur setting */
@@ -891,8 +865,6 @@ int SecCamera::startPreview(void)
 
 int SecCamera::stopPreview(void)
 {
-    int ret;
-
     LOGV("%s :", __func__);
 
     if (m_flag_camera_start == 0) {
@@ -900,15 +872,12 @@ int SecCamera::stopPreview(void)
         return 0;
     }
 
-    if (m_params->flash_mode == FLASH_MODE_TORCH)
-        setFlashMode(FLASH_MODE_OFF);
-
     if (m_cam_fd <= 0) {
         LOGE("ERR(%s):Camera was closed\n", __func__);
         return -1;
     }
 
-    ret = fimc_v4l2_streamoff(m_cam_fd);
+    int ret = stopStream();
     CHECK(ret);
 
     m_flag_camera_start = 0;
@@ -1881,8 +1850,8 @@ int SecCamera::setImageEffect(int image_effect)
         m_params->effects = image_effect;
         if (m_flag_camera_start) {
             if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, image_effect) < 0) {
-                LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_EFFECT", __func__);
-                return -1;
+                 LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_EFFECT", __func__);
+                 return -1;
             }
         }
     }
@@ -3077,7 +3046,7 @@ void SecCamera::setExifChangedAttribute()
         mExifInfo.gps_timestamp[2].num = tm_data.tm_sec;
         mExifInfo.gps_timestamp[2].den = 1;
         snprintf((char*)mExifInfo.gps_datestamp, sizeof(mExifInfo.gps_datestamp),
-                "%04d:%02d:%02d", tm_data.tm_year + 1900, tm_data.tm_mon, tm_data.tm_mday);
+                "%04d:%02d:%02d", tm_data.tm_year + 1900, tm_data.tm_mon + 1, tm_data.tm_mday);
 
         mExifInfo.enableGps = true;
     } else {
