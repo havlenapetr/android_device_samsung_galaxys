@@ -1671,9 +1671,9 @@ int SecCamera::zoomOut(void)
 
 // -----------------------------------
 
-int SecCamera::SetRotate(int angle)
+int SecCamera::setRotate(int angle)
 {
-    LOGE("%s(angle(%d))", __func__, angle);
+    LOGV("%s(angle(%d))", __func__, angle);
 
     if (m_angle != angle) {
         switch (angle) {

@@ -322,7 +322,7 @@ public:
     int             zoomIn(void);
     int             zoomOut(void);
 
-    int             SetRotate(int angle);
+    int             setRotate(int angle);
     int             getRotate(void);
 
     int             setVerticalMirror(void);

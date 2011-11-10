@@ -234,6 +234,37 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     p.set(SecCameraParameters::KEY_SUPPORTED_EFFECTS, parameterString.string());
     p.set(SecCameraParameters::KEY_EFFECT, SecCameraParameters::EFFECT_NONE);
 
+    // ISO
+    if (cameraId == SecCamera::CAMERA_ID_BACK) {
+        parameterString = SecCameraParameters::ISO_AUTO;
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_50);
+    } else {
+        parameterString = SecCameraParameters::ISO_50;
+    }
+    parameterString.append(",");
+    parameterString.append(SecCameraParameters::ISO_100);
+    parameterString.append(",");
+    parameterString.append(SecCameraParameters::ISO_200);
+    parameterString.append(",");
+    parameterString.append(SecCameraParameters::ISO_400);
+    if (cameraId == SecCamera::CAMERA_ID_BACK) {
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_800);
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_1600);
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_SPORTS);
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_NIGHT);
+        parameterString.append(",");
+        parameterString.append(SecCameraParameters::ISO_MOVIE);
+    }
+    p.set(SecCameraParameters::KEY_SUPPORTED_ISO_MODES,
+            parameterString.string());
+    p.set(SecCameraParameters::KEY_ISO, cameraId == SecCamera::CAMERA_ID_BACK ?
+            SecCameraParameters::ISO_AUTO : SecCameraParameters::ISO_100);
+
     if (cameraId == SecCamera::CAMERA_ID_BACK) {
         parameterString = SecCameraParameters::FLASH_MODE_OFF;
         p.set(SecCameraParameters::KEY_SUPPORTED_FLASH_MODES,
@@ -276,31 +307,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_PREVIEW_FPS_RANGE, "15000,30000");
 
         p.set(SecCameraParameters::KEY_FOCAL_LENGTH, "3.43");
-
-        // ISO
-        parameterString = SecCameraParameters::ISO_AUTO;
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_50);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_100);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_200);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_400);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_800);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_1600);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_SPORTS);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_NIGHT);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::ISO_MOVIE);
-        p.set(SecCameraParameters::KEY_SUPPORTED_ISO_MODES,
-              parameterString.string());
-        p.set(SecCameraParameters::KEY_ISO,
-              SecCameraParameters::ISO_AUTO);
     } else {
         p.set(SecCameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,30000)");
         p.set(SecCameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,30000");
@@ -337,7 +343,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("wdr", 0);
     ip.set("chk_dataline", 0);
     if (cameraId == SecCamera::CAMERA_ID_FRONT) {
-        ip.set("vtmode", 0);
+        ip.set("vtmode", 1);
         ip.set("blur", 0);
     }
 
