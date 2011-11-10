@@ -749,31 +749,35 @@ int SecCamera::startStream(void)
     int ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
     CHECK(ret);
 
-    // set all stream params manually, because ce147 driver doesn't handle
-    // this in fimc_v4l2_s_parm call
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
-    CHECK(ret);
-    
+    if (m_camera_id == CAMERA_ID_BACK) {
+        // set all stream params manually, because ce147 driver doesn't handle
+        // this in fimc_v4l2_s_parm call
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
+        CHECK(ret);
+    }
+
     ret = fimc_v4l2_streamon(m_cam_fd);
     CHECK(ret);
 
-    // these params must be set after streamon
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
-    CHECK(ret);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
-    CHECK(ret);
+    if (m_camera_id == CAMERA_ID_BACK) {
+        // these params must be set after streamon
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
+        CHECK(ret);
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
+        CHECK(ret);
+    }
 
     return 0;
 }
