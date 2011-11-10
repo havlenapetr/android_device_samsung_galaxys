@@ -83,9 +83,9 @@ namespace android {
 #define CE147_SNAPSHOT_WIDTH            2560
 #define CE147_SNAPSHOT_HEIGHT           1920
 
-#define CE147_POSTVIEW_WIDTH            1280
-#define CE147_POSTVIEW_WIDE_WIDTH       1280
-#define CE147_POSTVIEW_HEIGHT           720
+#define CE147_POSTVIEW_WIDTH            640
+#define CE147_POSTVIEW_WIDE_WIDTH       800
+#define CE147_POSTVIEW_HEIGHT           480
 #define CE147_POSTVIEW_BPP              16
 
 #define CE147_THUMBNAIL_WIDTH           320

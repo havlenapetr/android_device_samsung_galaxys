@@ -333,7 +333,6 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
     ip.set("sharpness", SHARPNESS_DEFAULT);
     ip.set("saturation", SATURATION_DEFAULT);
-    ip.set("iso", "auto");
     ip.set("metering", "center");
 
     ip.set("wdr", 0);
@@ -1051,7 +1050,8 @@ int CameraHardwareSec::pictureThread()
     bool isLSISensor = false;
 
     if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-        isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8);
+        isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8) ||
+                !strncmp((const char*)mCameraSensorName, "CE147", 5);
         if(isLSISensor) {
             LOGI("== Camera Sensor Detect %s - Samsung LSI SOC 5M ==\n", mCameraSensorName);
             // LSI 5M SOC
@@ -1243,6 +1243,9 @@ bool CameraHardwareSec::SplitFrame(unsigned char *pFrame, int dwSize,
         LOGE("There in no input information for decoding interleaved jpeg");
         return false;
     }
+
+    LOGI("%s: dwSize(%i), dwJPEGLineLength(%i), dwVideoLineLength(%i)",
+            __func__, dwSize, dwJPEGLineLength, dwVideoLineLength);
 
     unsigned char *pSrc = pFrame;
     unsigned char *pSrcEnd = pFrame + dwSize;

@@ -2897,15 +2897,7 @@ void SecCamera::setExifChangedAttribute()
     mExifInfo.exposure_time.den = (uint32_t)(1000000 / shutterSpeed);
 
     //3 ISO Speed Rating
-    int iso = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_ISO);
-    /* TBD - front camera needs to be fixed to support this g_ctrl,
-       it current returns a negative err value, so avoid putting
-       odd value into exif for now */
-    if (iso < 0) {
-        LOGE("%s: error %d getting iso, camera_id = %d, using 100",
-             __func__, iso, m_camera_id);
-        iso = ISO_100;
-    }
+    int iso = m_params->iso;
     switch(iso) {
         case ISO_50:
             mExifInfo.iso_speed_rating = 50;
@@ -2970,11 +2962,12 @@ void SecCamera::setExifChangedAttribute()
     }
 
     //3 Flash
-    int flash = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_FLASH_ONOFF);
+    /*int flash = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_GET_FLASH_ONOFF);
     if (flash < 0)
         mExifInfo.flash = EXIF_DEF_FLASH;
     else
-        mExifInfo.flash = flash;
+        mExifInfo.flash = flash;*/
+    mExifInfo.flash = EXIF_DEF_FLASH;
 
     //3 White Balance
     if (m_params->white_balance == WHITE_BALANCE_AUTO)
