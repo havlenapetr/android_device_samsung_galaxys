@@ -300,6 +300,11 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_SCENE_MODE,
               SecCameraParameters::SCENE_MODE_AUTO);*/
 
+        p.set(SecCameraParameters::KEY_ZOOM, "0");
+        p.set(SecCameraParameters::KEY_MAX_ZOOM, "400");
+        p.set(SecCameraParameters::KEY_ZOOM_RATIOS, "0,125,150,175,200,225,250,275,300,325,350,375,400");
+        p.set(SecCameraParameters::KEY_ZOOM_SUPPORTED, SecCameraParameters::TRUE);
+
         /* we have two ranges, 4-30fps for night mode and
          * 15-30fps for all others
          */
@@ -1618,6 +1623,20 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_ROTATION, new_rotation);
+        }
+    }
+
+    // zoom
+    int new_zoom = params.getInt(SecCameraParameters::KEY_ZOOM);
+    int max_zoom = params.getInt(SecCameraParameters::KEY_MAX_ZOOM);
+    LOGV("%s : new_zoom %d", __func__, new_zoom);
+    if (0 <= new_zoom && new_zoom <= max_zoom) {
+        LOGV("%s : set zoom:%d\n", __func__, new_zoom);
+        if (mSecCamera->setZoom(new_zoom) < 0) {
+            LOGE("ERR(%s):Fail on mSecCamera->setZoom(%d)", __func__, new_zoom);
+            ret = UNKNOWN_ERROR;
+        } else {
+            mParameters.set(SecCameraParameters::KEY_ZOOM, new_zoom);
         }
     }
 
