@@ -778,7 +778,12 @@ int SecCamera::startStream(void)
     if (m_camera_id == CAMERA_ID_FRONT) {
         ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
         CHECK(ret);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
+        CHECK(ret);
     }
+
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_params->brightness);
+    CHECK(ret);
 
     if (m_camera_id == CAMERA_ID_BACK) {
         // these params must be set after streamon
@@ -856,11 +861,6 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
     m_flag_camera_start = 1;
-
-    if (m_camera_id == CAMERA_ID_FRONT) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
-        CHECK(ret);
-    }
 
     // It is a delay for a new frame, not to show the previous bigger ugly picture frame.
     ret = fimc_poll(&m_events_c);

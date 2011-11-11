@@ -344,7 +344,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("chk_dataline", 0);
     if (cameraId == SecCamera::CAMERA_ID_FRONT) {
         ip.set("vtmode", 1);
-        ip.set("blur", 0);
+        ip.set("blur", 1);
     }
 
     p.set(SecCameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "51.2");
