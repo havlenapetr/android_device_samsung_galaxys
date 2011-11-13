@@ -58,6 +58,13 @@ using namespace android;
         return NULL;                                                 \
     }
 
+#define SET_VALUE_IF(fd, what, value)                                \
+    CHECK_FD(fd);                                                    \
+    if (value != -1) {                                               \
+        int ret = fimc_v4l2_s_ctrl(fd, what, value);                 \
+        CHECK(ret);                                                  \
+    }
+
 #define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
 #define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
 #define ALIGN_TO_8KB(x)   ((((x) + (1 << 13) - 1) >> 13) << 13)
@@ -760,16 +767,11 @@ int SecCamera::startStream(void)
 
         // set all stream params manually, because ce147 driver doesn't handle
         // this in fimc_v4l2_s_parm call
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
-        CHECK(ret);
-        //ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
-        //CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
-        CHECK(ret);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
     }
 
     ret = fimc_v4l2_streamon(m_cam_fd);
@@ -778,25 +780,19 @@ int SecCamera::startStream(void)
     if (m_camera_id == CAMERA_ID_FRONT) {
         ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
         CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
-        CHECK(ret);
+
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
     }
 
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_params->brightness);
-    CHECK(ret);
+    SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_params->brightness);
 
     if (m_camera_id == CAMERA_ID_BACK) {
         // these params must be set after streamon
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ZOOM, m_zoom_level);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
-        CHECK(ret);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
-        CHECK(ret);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_ZOOM, m_zoom_level);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
     }
 
     return 0;
