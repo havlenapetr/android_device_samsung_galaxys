@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifneq ($(filter galaxys,$(TARGET_DEVICE)),)
+ifeq ($(BOARD_USES_OVERLAY),true)
+
 LOCAL_PATH:= $(call my-dir)
 # HAL module implemenation, not prelinked and stored in
 # hw/<COPYPIX_HARDWARE_MODULE_ID>.<ro.product.board>.so
@@ -33,3 +36,6 @@ LOCAL_SRC_FILES := v4l2_utils.c overlay.cpp
 LOCAL_MODULE := overlay.aries
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
+
+endif
+endif
