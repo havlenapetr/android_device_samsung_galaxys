@@ -15,20 +15,15 @@
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-
-LOCAL_C_INCLUDES := $(LOCAL_PATH)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 
 LOCAL_SRC_FILES:= \
-	JpegEncoder.cpp
+	JPGApi.c
 
-LOCAL_SHARED_LIBRARIES:= liblog
-LOCAL_SHARED_LIBRARIES+= libdl
+LOCAL_SHARED_LIBRARIES:= liblog libdl
 
 LOCAL_MODULE:= libs3cjpeg
-
-LOCAL_MODULE_TAGS := optional
-
+LOCAL_MODULE_TAGS:=optional
 LOCAL_PRELINK_MODULE := false
 
 include $(BUILD_SHARED_LIBRARY)
