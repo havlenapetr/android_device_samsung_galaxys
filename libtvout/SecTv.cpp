@@ -380,6 +380,32 @@ static int tv20_v4l2_s_crop(int fp, int offset_x, int offset_y, int width, int h
     return 0;
 }
 
+int tv20_v4l2_start_overlay(int fp)
+{
+    int ret, start = 1;
+
+    ret = ioctl(fp, VIDIOC_OVERLAY, &start);
+    if (ret < 0) {
+        LOGE("ERR(%s): VIDIOC_OVERLAY start failed\n", __func__);
+        return ret;
+    }
+
+    return ret;
+}
+
+int tv20_v4l2_stop_overlay(int fp)
+{
+    int ret, stop = 0;
+
+    ret = ioctl(fp, VIDIOC_OVERLAY, &stop);
+    if (ret < 0) {
+        LOGE("ERR(%s): VIDIOC_OVERLAY stop failed\n", __func__);
+        return ret;
+    }
+
+    return ret;
+}
+
 // ======================================================================
 // Audio ioctls
 
@@ -431,7 +457,7 @@ int SecTv::openTvOut(SecTv** hardware)
 
     ret = (*hardware)->setStandart(S5P_TV_STD_NTSC_M);
     RETURN_IF(ret);
-    ret = (*hardware)->setOutput(S5P_TV_OUTPUT_TYPE_SVIDEO);
+    ret = (*hardware)->setOutput(S5P_TV_OUTPUT_TYPE_COMPOSITE);
     RETURN_IF(ret);
 
     return 0;
@@ -445,7 +471,9 @@ SecTv::SecTv(int fd, int index)
       mFormat(-1),
       mRunning(false),
       mAudioEnabled(false),
-      mRawHeap(NULL)
+      mRawHeap(NULL),
+      mTvOutVFd(-1),
+      mDefaultFBFd(-1)
 {
     mParams = (struct v4l2_window_s5p_tvout*)&mStreamParams.parm.raw_data;
     memset(mParams, 0, sizeof(struct v4l2_window_s5p_tvout));
@@ -454,10 +482,47 @@ SecTv::SecTv(int fd, int index)
 
 SecTv::~SecTv()
 {
-    close(mTvOutFd);
+    if (mDefaultFBFd > 0) {
+        close(mDefaultFBFd);
+    }
+    if(mTvOutFd > 0) {
+        close(mTvOutFd);
+    }
     if (mRawHeap != NULL) {
         mRawHeap.clear();
     }
+}
+
+int SecTv::init()
+{
+    if(mDefaultFBFd <= 0) {
+        mDefaultFBFd = open(DEFAULT_FB, O_RDWR);
+        RETURN_IF(mDefaultFBFd);
+    }
+    return 0;
+}
+
+int SecTv::initLayer()
+{
+    LOGV("%s", __func__);
+    if(mTvOutVFd > 0) {
+        return 0;
+    }
+
+    mTvOutVFd = open(TV_DEV_V_NAME, O_RDWR);
+    RETURN_IF(mTvOutVFd);
+    return 0;
+}
+
+void SecTv::deinitLayer()
+{
+    LOGV("%s", __func__);
+    if(mTvOutVFd < 0) {
+        return;
+    }
+
+    close(mTvOutVFd);
+    mTvOutVFd = -1;
 }
 
 int SecTv::setStandart(s5p_tv_standart standart)
@@ -613,9 +678,9 @@ bool SecTv::isMuted()
 int SecTv::enable(bool shouldEnableAudio)
 {
     LOGV("%s", __func__);
-    RETURN_IF(mTvOutFd);
+    RETURN_IF(mTvOutVFd);
 
-    int ret = tv20_v4l2_streamon(mTvOutFd);
+    int ret = tv20_v4l2_start_overlay(mTvOutVFd);
     RETURN_IF(ret);
 
     mRunning = true;
@@ -631,9 +696,9 @@ int SecTv::enable(bool shouldEnableAudio)
 int SecTv::disable()
 {
     LOGV("%s", __func__);
-    RETURN_IF(mTvOutFd);
+    RETURN_IF(mTvOutVFd);
 
-    int ret = tv20_v4l2_streamoff(mTvOutFd);
+    int ret = tv20_v4l2_stop_overlay(mTvOutVFd);
     RETURN_IF(ret);
 
     mRunning = false;

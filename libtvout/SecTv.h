@@ -38,11 +38,16 @@
 
 namespace android {
 
-#define TV_DEV_NAME   "/dev/video14"
+#define TV_DEV_NAME         "/dev/video14"
+
+/* TVOUT video */
+#define TV_DEV_V_NAME       "/dev/video21"
 
 // Analog  SVIDEO int s5p_tv_v4l2.c
-#define TV_DEV_INDEX 1
-#define TV_STANDART_INDEX 0
+#define TV_DEV_INDEX        1
+#define TV_STANDART_INDEX   0
+
+#define DEFAULT_FB          0
 
 /*
 * V4L2 TVOUT EXTENSIONS
@@ -141,8 +146,6 @@ public:
     ~SecTv();
 
     const __u8*     getName();
-    int             init(int pixfmt);
-    int             init(int pixfmt, const char* dev);
 
     int             setStandart(s5p_tv_standart standart);
     int             setOutput(s5p_tv_output output);
@@ -165,6 +168,8 @@ private:
     SecTv(int fd, int index);
 
     int             mTvOutFd;
+    int             mTvOutVFd;
+    int             mDefaultFBFd;
     int             mIndex;
     
     int             mWidth;
@@ -176,6 +181,9 @@ private:
 
     sp<MemoryHeapBase>  mRawHeap;
 
+    int             init();
+    int             initLayer();
+    void            deinitLayer();
     int             enableAudio();
     int             disableAudio();
 
