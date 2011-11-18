@@ -10,6 +10,7 @@ LOCAL_CFLAGS:=-fno-short-enums
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
 
 LOCAL_SRC_FILES:= \
+    fimd_api.c \
     SecTv.cpp
 
 LOCAL_SHARED_LIBRARIES:= libutils liblog libbinder libcutils

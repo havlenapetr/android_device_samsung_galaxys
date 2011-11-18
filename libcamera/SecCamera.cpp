@@ -44,12 +44,25 @@ using namespace android;
         return -1;                                                   \
     }
 
+#define CHECK_FD(fd)                                                 \
+    if (fd <= 0) {                                                   \
+        LOGE("%s::%d bad file descriptor, m_camera_id = %d\n",       \
+             __func__, __LINE__, m_camera_id);                       \
+        return -1;                                                   \
+    }
 
 #define CHECK_PTR(return_value)                                      \
     if (return_value < 0) {                                          \
         LOGE("%s::%d fail, errno: %s, m_camera_id = %d\n",           \
              __func__,__LINE__, strerror(errno), m_camera_id);       \
         return NULL;                                                 \
+    }
+
+#define SET_VALUE_IF(fd, what, value)                                \
+    CHECK_FD(fd);                                                    \
+    if (value != -1) {                                               \
+        int ret = fimc_v4l2_s_ctrl(fd, what, value);                 \
+        CHECK(ret);                                                  \
     }
 
 #define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
@@ -746,37 +759,40 @@ int SecCamera::getCameraFd(void)
 
 int SecCamera::startStream(void)
 {
-    int ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
-    CHECK(ret);
+    int ret;
 
     if (m_camera_id == CAMERA_ID_BACK) {
+        ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
+        CHECK(ret);
+
         // set all stream params manually, because ce147 driver doesn't handle
         // this in fimc_v4l2_s_parm call
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
-        CHECK(ret);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_EFFECT, m_params->effects);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_ISO, m_params->iso);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_METERING, m_params->metering);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SCENE_MODE, m_params->scene_mode);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_WHITE_BALANCE, m_params->white_balance);
     }
 
     ret = fimc_v4l2_streamon(m_cam_fd);
     CHECK(ret);
 
+    if (m_camera_id == CAMERA_ID_FRONT) {
+        ret = fimc_v4l2_s_parm(m_cam_fd, &m_streamparm);
+        CHECK(ret);
+
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR, m_blur_level);
+    }
+
+    SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_BRIGHTNESS, m_params->brightness);
+
     if (m_camera_id == CAMERA_ID_BACK) {
         // these params must be set after streamon
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
-        CHECK(ret);
-        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
-        CHECK(ret);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_ZOOM, m_zoom_level);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_CONTRAST, m_params->contrast);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_FOCUS_MODE, m_params->focus_mode);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SATURATION, m_params->saturation);
+        SET_VALUE_IF(m_cam_fd, V4L2_CID_CAMERA_SHARPNESS, m_params->sharpness);
     }
 
     return 0;
@@ -806,10 +822,7 @@ int SecCamera::startPreview(void)
         return 0;
     }
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     memset(&m_events_c, 0, sizeof(m_events_c));
     m_events_c.fd = m_cam_fd;
@@ -832,7 +845,6 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
     if (m_camera_id == CAMERA_ID_FRONT) {
-        /* VT mode setting */
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VT_MODE, m_vtmode);
         CHECK(ret);
     }
@@ -847,14 +859,6 @@ int SecCamera::startPreview(void)
     CHECK(ret);
 
     m_flag_camera_start = 1;
-
-    if (m_camera_id == CAMERA_ID_FRONT) {
-        /* Blur setting */
-        LOGV("m_blur_level = %d", m_blur_level);
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_VGA_BLUR,
-                               m_blur_level);
-        CHECK(ret);
-    }
 
     // It is a delay for a new frame, not to show the previous bigger ugly picture frame.
     ret = fimc_poll(&m_events_c);
@@ -876,10 +880,7 @@ int SecCamera::stopPreview(void)
         return 0;
     }
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     int ret = stopStream();
     CHECK(ret);
@@ -902,10 +903,7 @@ int SecCamera::startRecord(void)
         return 0;
     }
 
-    if (m_cam_fd2 <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd2);
 
     /* enum_fmt, s_fmt sample */
     ret = fimc_v4l2_enum_fmt(m_cam_fd2, V4L2_PIX_FMT_NV12T);
@@ -957,10 +955,7 @@ int SecCamera::stopRecord(void)
         return 0;
     }
 
-    if (m_cam_fd2 <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd2);
 
     m_flag_record_start = 0;
 
@@ -978,6 +973,8 @@ unsigned int SecCamera::getRecPhyAddrY(int index)
 {
     unsigned int addr_y;
 
+    CHECK_FD(m_cam_fd2);
+
     addr_y = fimc_v4l2_s_ctrl(m_cam_fd2, V4L2_CID_PADDR_Y, index);
     CHECK((int)addr_y);
     return addr_y;
@@ -986,6 +983,8 @@ unsigned int SecCamera::getRecPhyAddrY(int index)
 unsigned int SecCamera::getRecPhyAddrC(int index)
 {
     unsigned int addr_c;
+
+    CHECK_FD(m_cam_fd2);
 
     addr_c = fimc_v4l2_s_ctrl(m_cam_fd2, V4L2_CID_PADDR_CBCR, index);
     CHECK((int)addr_c);
@@ -996,6 +995,8 @@ unsigned int SecCamera::getPhyAddrY(int index)
 {
     unsigned int addr_y;
 
+    CHECK_FD(m_cam_fd);
+
     addr_y = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_PADDR_Y, index);
     CHECK((int)addr_y);
     return addr_y;
@@ -1004,6 +1005,8 @@ unsigned int SecCamera::getPhyAddrY(int index)
 unsigned int SecCamera::getPhyAddrC(int index)
 {
     unsigned int addr_c;
+
+    CHECK_FD(m_cam_fd);
 
     addr_c = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_PADDR_CBCR, index);
     CHECK((int)addr_c);
@@ -1019,6 +1022,8 @@ int SecCamera::getPreview()
 {
     int index;
     int ret;
+
+    CHECK_FD(m_cam_fd);
 
     if (m_flag_camera_start == 0 || previewPoll(true) == 0) {
         LOGE("ERR(%s):Start Camera Device Reset \n", __func__);
@@ -1063,6 +1068,8 @@ int SecCamera::getRecordFrame()
         return -1;
     }
 
+    CHECK_FD(m_cam_fd2);
+
     previewPoll(false);
     return fimc_v4l2_dqbuf(m_cam_fd2);
 }
@@ -1079,6 +1086,8 @@ int SecCamera::releaseRecordFrame(int index)
         LOGI("%s: recording not in progress, ignoring", __func__);
         return 0;
     }
+
+    CHECK_FD(m_cam_fd2);
 
     return fimc_v4l2_qbuf(m_cam_fd2, index);
 }
@@ -1149,13 +1158,10 @@ int SecCamera::setSnapshotCmd(void)
 
     int ret = 0;
 
+    CHECK_FD(m_cam_fd);
+
     LOG_TIME_DEFINE(0)
     LOG_TIME_DEFINE(1)
-
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return 0;
-    }
 
     if (m_flag_camera_start > 0) {
         LOG_TIME_START(0)
@@ -1372,10 +1378,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
 
     //fimc_v4l2_streamoff(m_cam_fd); [zzangdol] remove - it is separate in HWInterface with camera_id
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     if (m_flag_camera_start > 0) {
         LOG_TIME_START(0)
@@ -1615,10 +1618,7 @@ int SecCamera::setAutofocus(void)
 {
     LOGV("%s :", __func__);
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_ON) < 0) {
             LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SET_AUTO_FOCUS", __func__);
@@ -1643,10 +1643,7 @@ int SecCamera::cancelAutofocus(void)
 {
     LOGV("%s :", __func__);
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_SET_AUTO_FOCUS, AUTO_FOCUS_OFF) < 0) {
         LOGE("ERR(%s):Fail on V4L2_CID_CAMERA_SET_AUTO_FOCUS", __func__);
@@ -1672,9 +1669,9 @@ int SecCamera::zoomOut(void)
 
 // -----------------------------------
 
-int SecCamera::SetRotate(int angle)
+int SecCamera::setRotate(int angle)
 {
-    LOGE("%s(angle(%d))", __func__, angle);
+    LOGV("%s(angle(%d))", __func__, angle);
 
     if (m_angle != angle) {
         switch (angle) {
@@ -1747,10 +1744,7 @@ int SecCamera::setVerticalMirror(void)
 {
     LOGV("%s :", __func__);
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_VFLIP, 0) < 0) {
         LOGE("ERR(%s):Fail on V4L2_CID_VFLIP", __func__);
@@ -1764,10 +1758,7 @@ int SecCamera::setHorizontalMirror(void)
 {
     LOGV("%s :", __func__);
 
-    if (m_cam_fd <= 0) {
-        LOGE("ERR(%s):Camera was closed\n", __func__);
-        return -1;
-    }
+    CHECK_FD(m_cam_fd);
 
     if (fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_HFLIP, 0) < 0) {
         LOGE("ERR(%s):Fail on V4L2_CID_HFLIP", __func__);

@@ -22,6 +22,8 @@
 #include "recovery_ui.h"
 #include "common.h"
 
+#define ITEM_CHROOT          4
+
 char* MENU_HEADERS[] = { "Volume up/down to move highlight;",
                          "power button to select.",
                          "",
@@ -31,6 +33,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply update from /sdcard",
                        "wipe data/factory reset",
                        "wipe cache partition",
+                       "start OS from /dev/block/mmcblk1p4",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
@@ -110,6 +113,13 @@ int device_handle_key(int key_code, int visible) {
 }
 
 int device_perform_action(int which) {
+    switch (which) {
+        // here we will mount root folder of new OS
+        // chroot to this folder and start booting
+        case ITEM_CHROOT:
+            ui_print("Not yet implemented\n");
+            break;
+    }
     return which;
 }
 
