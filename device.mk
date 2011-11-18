@@ -48,26 +48,26 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-        device/samsung/galaxys/init.rc:root/init.rc \
-        device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
-        device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
-        device/samsung/galaxys/recovery.rc:root/recovery.rc \
-        device/samsung/galaxys/lpm.rc:root/lpm.rc \
-        device/samsung/galaxys/fota.rc:root/fota.rc \
-        device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
+    device/samsung/galaxys/init.rc:root/init.rc \
+    device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
+    device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
+    device/samsung/galaxys/recovery.rc:root/recovery.rc \
+    device/samsung/galaxys/lpm.rc:root/lpm.rc \
+    device/samsung/galaxys/fota.rc:root/fota.rc \
+    device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
 # Recovery images
 PRODUCT_COPY_FILES += \
-        bootable/recovery/res/images/icon_error.png:system/etc/recovery/res/images/icon_error.png \
-        bootable/recovery/res/images/icon_installing.png:system/etc/recovery/res/images/icon_installing.png \
-        bootable/recovery/res/images/indeterminate1.png:system/etc/recovery/res/images/indeterminate1.png \
-        bootable/recovery/res/images/indeterminate2.png:system/etc/recovery/res/images/indeterminate2.png \
-        bootable/recovery/res/images/indeterminate3.png:system/etc/recovery/res/images/indeterminate3.png \
-        bootable/recovery/res/images/indeterminate4.png:system/etc/recovery/res/images/indeterminate4.png \
-        bootable/recovery/res/images/indeterminate5.png:system/etc/recovery/res/images/indeterminate5.png \
-        bootable/recovery/res/images/indeterminate6.png:system/etc/recovery/res/images/indeterminate6.png \
-        bootable/recovery/res/images/progress_empty.png:system/etc/recovery/res/images/progress_empty.png \
-        bootable/recovery/res/images/progress_fill.png:system/etc/recovery/res/images/progress_fill.png
+    bootable/recovery/res/images/icon_error.png:system/etc/recovery/res/images/icon_error.png \
+    bootable/recovery/res/images/icon_installing.png:system/etc/recovery/res/images/icon_installing.png \
+    bootable/recovery/res/images/indeterminate01.png:system/etc/recovery/res/images/indeterminate01.png \
+    bootable/recovery/res/images/indeterminate02.png:system/etc/recovery/res/images/indeterminate02.png \
+    bootable/recovery/res/images/indeterminate03.png:system/etc/recovery/res/images/indeterminate03.png \
+    bootable/recovery/res/images/indeterminate04.png:system/etc/recovery/res/images/indeterminate04.png \
+    bootable/recovery/res/images/indeterminate05.png:system/etc/recovery/res/images/indeterminate05.png \
+    bootable/recovery/res/images/indeterminate06.png:system/etc/recovery/res/images/indeterminate06.png \
+    bootable/recovery/res/images/progress_empty.png:system/etc/recovery/res/images/progress_empty.png \
+    bootable/recovery/res/images/progress_fill.png:system/etc/recovery/res/images/progress_fill.png
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
@@ -78,8 +78,8 @@ PRODUCT_COPY_FILES += \
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
-       cypress-touchkey.kcm \
-       s3c-keypad.kcm
+    cypress-touchkey.kcm \
+    s3c-keypad.kcm
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
@@ -103,7 +103,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
 	lights.aries \
 	overlay.aries \
-	sensors.aries
+	sensors.aries \
+    audio.primary.aries \
+ 	audio_policy.aries
 
 # fmradio app
 #PRODUCT_PACKAGES += \
@@ -111,7 +113,7 @@ PRODUCT_PACKAGES += \
 
 # flac library
 PRODUCT_PACKAGES += \
-        libFLAC
+    libFLAC
 
 # Libs
 PRODUCT_PACKAGES += \
@@ -120,7 +122,7 @@ PRODUCT_PACKAGES += \
 
 # apns config file
 PRODUCT_COPY_FILES += \
-        device/samsung/galaxys/apns-conf.xml:system/etc/apns-conf.xml
+    device/samsung/galaxys/apns-conf.xml:system/etc/apns-conf.xml
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
@@ -128,7 +130,7 @@ PRODUCT_COPY_FILES += \
 	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
 	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
 	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
-        frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
+    frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
 	frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
 	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
 	frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
@@ -146,17 +148,17 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
-       wifi.interface=eth0 \
-       wifi.supplicant_scan_interval=20 \
-       ro.telephony.ril_class=samsung \
-       mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
-       dalvik.vm.heapsize=32m
+    wifi.interface=eth0 \
+    wifi.supplicant_scan_interval=20 \
+    ro.telephony.ril_class=samsung \
+    mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
+    dalvik.vm.heapsize=32m
 
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
 PRODUCT_PROPERTY_OVERRIDES += \
-        ro.com.google.locationfeatures=1 \
-        ro.com.google.networklocation=1
+    ro.com.google.locationfeatures=1 \
+    ro.com.google.networklocation=1
 
 # Extended JNI checks
 # The extended JNI checks will cause the system to run more slowly, but they can spot a variety of nasty bugs 
