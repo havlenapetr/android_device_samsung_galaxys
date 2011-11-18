@@ -302,7 +302,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
         p.set(SecCameraParameters::KEY_ZOOM, "0");
         p.set(SecCameraParameters::KEY_MAX_ZOOM, "12");
-        p.set(SecCameraParameters::KEY_ZOOM_RATIOS, "0,125,150,175,200,225,250,275,300,325,350,375,400");
+        p.set(SecCameraParameters::KEY_ZOOM_RATIOS, "100,125,150,175,200,225,250,275,300,325,350,375,400");
         p.set(SecCameraParameters::KEY_ZOOM_SUPPORTED, SecCameraParameters::TRUE);
 
         /* we have two ranges, 4-30fps for night mode and
