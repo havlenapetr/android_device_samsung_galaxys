@@ -1223,6 +1223,19 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
 
     LOG_TIME_DEFINE(2)
 
+    if(m_camera_id == CAMERA_ID_BACK) {
+        //Date time
+        time_t rawtime;
+        time(&rawtime);
+        struct tm *timeinfo = localtime(&rawtime);
+
+        ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_TIME_INFO, timeinfo);
+        CHECK_PTR(ret);
+
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
+        CHECK_PTR(ret);
+    }
+
     // capture
     ret = fimc_poll(&m_events_c);
     CHECK_PTR(ret);
@@ -1242,8 +1255,8 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
 
     ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     CHECK_PTR(ret);
-    LOGV("\nsnapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d, size = %d\n\n",
-            index, m_snapshot_width, m_snapshot_height, *jpeg_size);
+    LOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
+            index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 
     addr = (unsigned char*)(m_capture_buf.start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
@@ -3093,7 +3106,7 @@ status_t SecCamera::dump(int fd, const Vector<String16> &args)
 }
 
 double SecCamera::jpeg_ratio = 0.7;
-int SecCamera::interleaveDataSize = 4261248;
+int SecCamera::interleaveDataSize = 0x360000;
 int SecCamera::jpegLineLength = 636;
 
 }; // namespace android
