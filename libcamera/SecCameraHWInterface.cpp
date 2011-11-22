@@ -979,180 +979,71 @@ bool CameraHardwareSec::YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth
 
 int CameraHardwareSec::pictureThread()
 {
-    LOGV("%s :", __func__);
+    LOGV("%s()", __FUNCTION__);
 
-    int jpeg_size = 0;
     int ret = NO_ERROR;
-    unsigned char *jpeg_data = NULL;
-    int postview_offset = 0;
-    unsigned char *postview_data = NULL;
 
-    unsigned char *addr = NULL;
-    int mPostViewWidth, mPostViewHeight, mPostViewSize;
-    int mThumbWidth, mThumbHeight, mThumbSize;
-    int cap_width, cap_height, cap_frame_size;
+    sp<MemoryBase>  rawBuffer = NULL;
+    int             pictureWidth  = 0;
+    int             pictureHeight = 0;
+    int             pictureFormat = 0;
+    unsigned int    picturePhyAddr = 0;
+    bool            flagShutterCallback = false;
 
-    unsigned int output_size = 0;
+    unsigned char * jpegData = NULL;
+    int             jpegSize = 0;
 
-    mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    mSecCamera->getThumbnailConfig(&mThumbWidth, &mThumbHeight, &mThumbSize);
-    int postviewHeapSize = mPostViewSize;
-    mSecCamera->getSnapshotSize(&cap_width, &cap_height, &cap_frame_size);
-    int mJpegHeapSize;
-    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
-        mJpegHeapSize = cap_frame_size * SecCamera::getJpegRatio();
-    else
-        mJpegHeapSize = cap_frame_size;
+    pictureWidth  = 640;
+    pictureHeight = 480;
 
-    LOG_TIME_DEFINE(0)
-    LOG_TIME_START(0)
-    sp<MemoryBase> buffer = new MemoryBase(mRawHeap, 0, mPostViewSize + 8);
+    if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb)
+    {
+        pictureFormat = mSecCamera->getSnapshotPixelFormat();
 
-    struct addrs_cap *addrs = (struct addrs_cap *)mRawHeap->base();
-
-    addrs[0].width = mPostViewWidth;
-    addrs[0].height = mPostViewHeight;
-    LOGV("[5B] mPostViewWidth = %d mPostViewHeight = %d\n",mPostViewWidth,mPostViewHeight);
-
-    sp<MemoryHeapBase> JpegHeap = new MemoryHeapBase(mJpegHeapSize);
-    sp<MemoryHeapBase> PostviewHeap = new MemoryHeapBase(mPostViewSize);
-    sp<MemoryHeapBase> ThumbnailHeap = new MemoryHeapBase(mThumbSize);
-
-    if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
-        LOG_TIME_DEFINE(1)
-        LOG_TIME_START(1)
-
-        int picture_size, picture_width, picture_height;
-        mSecCamera->getSnapshotSize(&picture_width, &picture_height, &picture_size);
-        int picture_format = mSecCamera->getSnapshotPixelFormat();
-
-        unsigned int phyAddr;
-
-        // Modified the shutter sound timing for Jpeg capture
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK)
-            mSecCamera->setSnapshotCmd();
-        if (mMsgEnabled & CAMERA_MSG_SHUTTER) {
-            mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
-        }
-
-        if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK){
-            jpeg_data = mSecCamera->getJpeg(&jpeg_size, &phyAddr);
-            if (jpeg_data == NULL) {
-                LOGE("ERR(%s):Fail on SecCamera->getSnapshot()", __func__);
-                ret = UNKNOWN_ERROR;
-            }
-        } else {
-            if (mSecCamera->getSnapshotAndJpeg((unsigned char*)PostviewHeap->base(),
-                    (unsigned char*)JpegHeap->base(), &output_size) < 0) {
-                mStateLock.lock();
-                mCaptureInProgress = false;
-                mStateLock.unlock();
-                return UNKNOWN_ERROR;
-            }
-            LOGI("snapshotandjpeg done\n");
-        }
-
-        LOG_TIME_END(1)
-        LOG_CAMERA("getSnapshotAndJpeg interval: %lu us", LOG_TIME(1));
-    }
-
-    int JpegImageSize, JpegExifSize;
-    bool isLSISensor = false;
-
-    if (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-        isLSISensor = !strncmp((const char*)mCameraSensorName, "S5K4ECGX", 8) ||
-                !strncmp((const char*)mCameraSensorName, "CE147", 5);
-        if(isLSISensor) {
-            LOGI("== Camera Sensor Detect %s - Samsung LSI SOC 5M ==\n", mCameraSensorName);
-            // LSI 5M SOC
-            if (!SplitFrame(jpeg_data, SecCamera::getInterleaveDataSize(),
-                       SecCamera::getJpegLineLength(),
-                       mPostViewWidth * 2, mPostViewWidth,
-                       JpegHeap->base(), &JpegImageSize,
-                       PostviewHeap->base(), &mPostViewSize))
-                return UNKNOWN_ERROR;
-        } else {
-            LOGI("== Camera Sensor Detect %s Sony SOC 5M ==\n", mCameraSensorName);
-            decodeInterleaveData(jpeg_data, SecCamera::getInterleaveDataSize(), mPostViewWidth, mPostViewHeight,
-                                &JpegImageSize, JpegHeap->base(), PostviewHeap->base());
-
-        }
-    } else {
-        JpegImageSize = static_cast<int>(output_size);
-    }
-    scaleDownYuv422((char *)PostviewHeap->base(), mPostViewWidth, mPostViewHeight,
-                    (char *)ThumbnailHeap->base(), mThumbWidth, mThumbHeight);
-
-    memcpy(mRawHeap->base(),PostviewHeap->base(), postviewHeapSize);
-
-#if defined(BOARD_USES_OVERLAY)
-   /* Put postview image to Overlay */
-    unsigned int index = 0;
-    unsigned int offset = ((mPostViewWidth*mPostViewHeight*3/2) + 16) * index;
-    unsigned int overlay_header[4];
-
-    // Only show postview image if size is VGA since sensor cannot deliver
-    // any other sizes.
-    int previewWidth, previewHeight, previewSize;
-    mSecCamera->getPreviewSize(&previewWidth, &previewHeight, &previewSize);
-    if ((previewWidth != 640) || (previewHeight != 480))
-        goto PostviewOverlayEnd;
-
-    mOverlayBufferIdx ^= 1;
-    overlay_header[0]= mSecCamera->getPhyAddrY(index);
-    overlay_header[1]= overlay_header[0] + mPostViewWidth*mPostViewHeight;
-    overlay_header[2]= mOverlayBufferIdx;
-
-    YUY2toNV21(mRawHeap->base(), (void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset),
-                mPostViewWidth, mPostViewHeight);
-
-    memcpy(static_cast<unsigned char*>(mPreviewHeap->base()) + offset + (mPostViewWidth*mPostViewHeight * 3 / 2),
-            overlay_header, 16);
-
-    ret = mOverlay->queueBuffer((void*)(static_cast<unsigned char *>(mPreviewHeap->base()) + offset +
-                                (mPostViewWidth*mPostViewHeight * 3 / 2)));
-
-    if (ret == -1) {
-        LOGE("ERR(%s):overlay queueBuffer fail", __func__);
-    } else if (ret != ALL_BUFFERS_FLUSHED) {
-        overlay_buffer_t overlay_buffer;
-        ret = mOverlay->dequeueBuffer(&overlay_buffer);
-        if (ret == -1) {
-            LOGE("ERR(%s):overlay dequeueBuffer fail", __func__);
-        }
-    }
-
-PostviewOverlayEnd:
-#endif
-    if (mMsgEnabled & CAMERA_MSG_RAW_IMAGE) {
-        mDataCb(CAMERA_MSG_RAW_IMAGE, buffer, mCallbackCookie);
-    }
-    if (mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) {
-        sp<MemoryHeapBase> ExifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
-        JpegExifSize = mSecCamera->getExif((unsigned char *)ExifHeap->base(),
-                (unsigned char *)ThumbnailHeap->base());
-
-        LOGV("JpegExifSize=%d", JpegExifSize);
-
-        if (JpegExifSize < 0) {
+        mSecCamera->setSnapshotCmd();
+        jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
+        if(jpegData == NULL)
+        {
+            LOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
+            picturePhyAddr = 0;
             ret = UNKNOWN_ERROR;
-            goto out;
         }
 
-        unsigned char *ExifStart = (unsigned char *)JpegHeap->base() + 2;
-        unsigned char *ImageStart = ExifStart + JpegExifSize;
+        if(picturePhyAddr != 0)
+        {
+            rawBuffer = new MemoryBase(mRawHeap, 0, sizeof(struct addrs_cap));
+            struct addrs_cap *addrs = (struct addrs_cap *)mRawHeap->base();
 
-        memmove(ImageStart, ExifStart, JpegImageSize - 2);
-        memcpy(ExifStart, ExifHeap->base(), JpegExifSize);
-        sp<MemoryBase> mem = new MemoryBase(JpegHeap, 0, JpegImageSize + JpegExifSize);
+            addrs[0].addr_y = picturePhyAddr;
+            addrs[0].width  = pictureWidth;
+            addrs[0].height = pictureHeight;
+        }
 
-        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, mem, mCallbackCookie);
+        if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb)
+        {
+            image_rect_type size;
+            size.width  = pictureWidth;
+            size.height = pictureHeight;
+
+            mNotifyCb(CAMERA_MSG_SHUTTER, (int32_t)&size, 0, mCallbackCookie);
+        }
+
+        mDataCb(CAMERA_MSG_RAW_IMAGE, rawBuffer, mCallbackCookie);
     }
 
-    LOG_TIME_END(0)
-    LOG_CAMERA("pictureThread interval: %lu us", LOG_TIME(0));
+    if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb)
+    {
+        sp<MemoryBase> jpegMem = NULL;
+        if(jpegData != NULL)
+        {
+            sp<MemoryHeapBase> jpegHeap = new MemoryHeapBase(jpegSize);
+            jpegMem  = new MemoryBase(jpegHeap, 0, jpegSize);
 
-    LOGV("%s : pictureThread end", __func__);
+            memcpy(jpegHeap->base(), jpegData, jpegSize);
+        }
+
+        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, mCallbackCookie);
+    }
 
 out:
     mStateLock.lock();
