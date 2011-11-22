@@ -431,7 +431,7 @@ public:
 #endif // ENABLE_ESD_PREVIEW_CHECK
 
     int setFrameRate(int frame_rate);
-    unsigned char*  getJpeg(int*, unsigned int*);
+    unsigned char*  getJpeg(unsigned int*, unsigned int*);
     int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
                                         unsigned int *output_size);
     int             getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);

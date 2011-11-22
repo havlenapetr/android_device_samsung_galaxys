@@ -976,46 +976,80 @@ bool CameraHardwareSec::YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth
 
 int CameraHardwareSec::pictureThread()
 {
-    LOGV("%s()", __FUNCTION__);
+    LOGI("%s()", __FUNCTION__);
 
-    int ret = NO_ERROR;
-
-    sp<MemoryBase>  rawBuffer = NULL;
+    int             ret = NO_ERROR;
     int             pictureWidth  = 0;
     int             pictureHeight = 0;
     int             frameSize = 0;
+    int             postViewWidth = 0;
+    int             postViewHeight = 0;
+    int             postViewSize = 0;
+    int             thumbWidth = 0;
+    int             thumbHeight = 0;
+    int             thumbSize = 0;
     int             pictureFormat = 0;
     unsigned int    picturePhyAddr = 0;
     bool            flagShutterCallback = false;
 
-    unsigned char * jpegData = NULL;
-    int             jpegSize = 0;
+    unsigned char*  jpegData = NULL;
+    unsigned int    jpegSize = 0;
+    /* * * * * * memory buffers * * * * * */
+    sp<MemoryBase>      rawBuffer = NULL;
+    sp<MemoryHeapBase>  jpegHeap = NULL;
+    sp<MemoryHeapBase>  postviewHeap = NULL;
+    sp<MemoryHeapBase>  thumbnailHeap = NULL;
+    struct addrs_cap*   addrs;
 
     mSecCamera->getSnapshotSize(&pictureWidth, &pictureHeight, &frameSize);
+    mSecCamera->getPostViewConfig(&postViewWidth, &postViewHeight, &postViewSize);
+    mSecCamera->getThumbnailConfig(&thumbWidth, &thumbHeight, &thumbSize);
+
+    addrs = (struct addrs_cap *)mRawHeap->base();
+    addrs[0].width  = pictureWidth;
+    addrs[0].height = pictureHeight;
 
     if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
         pictureFormat = mSecCamera->getSnapshotPixelFormat();
 
-        ret = mSecCamera->setSnapshotCmd();
-        if(ret < 0) {
-            LOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
-            return ret;
-        }
+        if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
+            ret = mSecCamera->setSnapshotCmd();
+            if(ret < 0) {
+                LOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
+                goto out;
+            }
 
-        jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
-        if(jpegData == NULL) {
-            LOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
-            picturePhyAddr = 0;
-            ret = UNKNOWN_ERROR;
-        }
+            jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
+            if(jpegData == NULL) {
+                LOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
+                picturePhyAddr = 0;
+                ret = UNKNOWN_ERROR;
+                goto out;
+            }
 
-        if(picturePhyAddr != 0) {
-            rawBuffer = new MemoryBase(mRawHeap, 0, sizeof(struct addrs_cap));
-            struct addrs_cap *addrs = (struct addrs_cap *)mRawHeap->base();
+            if(picturePhyAddr != 0) {
+                rawBuffer = new MemoryBase(mRawHeap, 0, sizeof(struct addrs_cap));
+                addrs[0].addr_y = picturePhyAddr;
+            }
+            jpegHeap = new MemoryHeapBase(jpegSize);
+        } else {
+            jpegHeap = new MemoryHeapBase(frameSize);
+            postviewHeap = new MemoryHeapBase(postViewSize);
+            thumbnailHeap = new MemoryHeapBase(thumbSize);
 
-            addrs[0].addr_y = picturePhyAddr;
-            addrs[0].width  = pictureWidth;
-            addrs[0].height = pictureHeight;
+            if (mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
+                    (unsigned char*)jpegHeap->base(), &jpegSize) < 0) {
+                LOGE("ERR(%s):Fail on SecCamera->getSnapshotAndJpeg()", __FUNCTION__);
+                goto out;
+            }
+
+            rawBuffer = new MemoryBase(mRawHeap, 0, postViewSize + 8);
+            if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
+                    (char *)thumbnailHeap->base(), thumbWidth, thumbHeight)) {
+                LOGE("ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
+                goto out;
+            }
+            memcpy(mRawHeap->base(), postviewHeap->base(), postViewSize);
         }
 
         if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
@@ -1041,10 +1075,24 @@ int CameraHardwareSec::pictureThread()
     if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
         sp<MemoryBase> jpegMem = NULL;
         if(jpegData != NULL) {
-            sp<MemoryHeapBase> jpegHeap = new MemoryHeapBase(jpegSize);
             jpegMem  = new MemoryBase(jpegHeap, 0, jpegSize);
-
             memcpy(jpegHeap->base(), jpegData, jpegSize);
+        } else {
+            sp<MemoryHeapBase> exifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
+            unsigned int jpegExifSize = mSecCamera->getExif((unsigned char *)exifHeap->base(),
+                    (unsigned char *)thumbnailHeap->base());
+            if (jpegExifSize < 0) {
+                ret = UNKNOWN_ERROR;
+                LOGE("ERR(%s):Fail on jpegExifSize < 0", __FUNCTION__);
+                goto out;
+            }
+
+            unsigned char *exifStart = (unsigned char *)jpegHeap->base() + 2;
+            unsigned char *imageStart = exifStart + jpegExifSize;
+
+            memmove(imageStart, exifStart, jpegSize - 2);
+            memcpy(exifStart, exifHeap->base(), jpegExifSize);
+            jpegMem  = new MemoryBase(jpegHeap, 0, jpegSize + jpegExifSize);
         }
 
         mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, mCallbackCookie);

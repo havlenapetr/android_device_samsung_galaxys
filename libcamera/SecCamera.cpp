@@ -1210,7 +1210,7 @@ int SecCamera::endSnapshot(void)
 /*
  * Set Jpeg quality & exif info and get JPEG data from camera ISP
  */
-unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
+unsigned char* SecCamera::getJpeg(unsigned int *jpeg_size, unsigned int *phyaddr)
 {
     LOGV("%s :", __func__);
 
