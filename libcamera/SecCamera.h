@@ -299,14 +299,14 @@ public:
 
     int             getPreview(void);
     int             setPreviewSize(int width, int height, int pixel_format);
-    int             getPreviewSize(int *width, int *height, int *frame_size);
-    int             getPreviewMaxSize(int *width, int *height);
+    void            getPreviewSize(int *width, int *height, int *frame_size);
+    void            getPreviewMaxSize(int *width, int *height);
     int             getPreviewPixelFormat(void);
     int             setPreviewImage(int index, unsigned char *buffer, int size);
 
     int             setSnapshotSize(int width, int height);
-    int             getSnapshotSize(int *width, int *height, int *frame_size);
-    int             getSnapshotMaxSize(int *width, int *height);
+    void            getSnapshotSize(int *width, int *height, int *frame_size);
+    void            getSnapshotMaxSize(int *width, int *height);
     int             setSnapshotPixelFormat(int pixel_format);
     int             getSnapshotPixelFormat(void);
 

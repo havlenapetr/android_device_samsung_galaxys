@@ -1123,21 +1123,17 @@ int SecCamera::setPreviewSize(int width, int height, int pixel_format)
     return 0;
 }
 
-int SecCamera::getPreviewSize(int *width, int *height, int *frame_size)
+void SecCamera::getPreviewSize(int *width, int *height, int *frame_size)
 {
     *width  = m_preview_width;
     *height = m_preview_height;
     *frame_size = m_frameSize(m_preview_v4lformat, m_preview_width, m_preview_height);
-
-    return 0;
 }
 
-int SecCamera::getPreviewMaxSize(int *width, int *height)
+void SecCamera::getPreviewMaxSize(int *width, int *height)
 {
     *width  = m_preview_max_width;
     *height = m_preview_max_height;
-
-    return 0;
 }
 
 int SecCamera::getPreviewPixelFormat(void)
@@ -1542,7 +1538,7 @@ int SecCamera::setSnapshotSize(int width, int height)
     return 0;
 }
 
-int SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
+void SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
 {
     *width  = m_snapshot_width;
     *height = m_snapshot_height;
@@ -1556,11 +1552,9 @@ int SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
         frame = m_snapshot_width * m_snapshot_height * BPP;
 
     *frame_size = frame;
-
-    return 0;
 }
 
-int SecCamera::getSnapshotMaxSize(int *width, int *height)
+void SecCamera::getSnapshotMaxSize(int *width, int *height)
 {
     switch (m_camera_id) {
     case CAMERA_ID_FRONT:
@@ -1577,8 +1571,6 @@ int SecCamera::getSnapshotMaxSize(int *width, int *height)
 
     *width  = m_snapshot_max_width;
     *height = m_snapshot_max_height;
-
-    return 0;
 }
 
 int SecCamera::setSnapshotPixelFormat(int pixel_format)

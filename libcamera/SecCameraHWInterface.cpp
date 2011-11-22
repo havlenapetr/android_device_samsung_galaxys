@@ -165,14 +165,11 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
     // If these fail, then we are using an invalid cameraId and we'll leave the
     // sizes at zero to catch the error.
-    if (mSecCamera->getPreviewMaxSize(&preview_max_width,
-                                      &preview_max_height) < 0)
-        LOGE("getPreviewMaxSize fail (%d / %d) \n",
-             preview_max_width, preview_max_height);
-    if (mSecCamera->getSnapshotMaxSize(&snapshot_max_width,
-                                       &snapshot_max_height) < 0)
-        LOGE("getSnapshotMaxSize fail (%d / %d) \n",
-             snapshot_max_width, snapshot_max_height);
+    mSecCamera->getPreviewMaxSize(&preview_max_width,
+                                  &preview_max_height);
+
+    mSecCamera->getSnapshotMaxSize(&snapshot_max_width,
+                                   &snapshot_max_height);
 
     p.setPreviewFormat(SecCameraParameters::PIXEL_FORMAT_YUV420SP);
     p.setPreviewSize(preview_max_width, preview_max_height);
@@ -986,6 +983,7 @@ int CameraHardwareSec::pictureThread()
     sp<MemoryBase>  rawBuffer = NULL;
     int             pictureWidth  = 0;
     int             pictureHeight = 0;
+    int             frameSize = 0;
     int             pictureFormat = 0;
     unsigned int    picturePhyAddr = 0;
     bool            flagShutterCallback = false;
@@ -993,24 +991,25 @@ int CameraHardwareSec::pictureThread()
     unsigned char * jpegData = NULL;
     int             jpegSize = 0;
 
-    pictureWidth  = 640;
-    pictureHeight = 480;
+    mSecCamera->getSnapshotSize(&pictureWidth, &pictureHeight, &frameSize);
 
-    if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb)
-    {
+    if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
         pictureFormat = mSecCamera->getSnapshotPixelFormat();
 
-        mSecCamera->setSnapshotCmd();
+        ret = mSecCamera->setSnapshotCmd();
+        if(ret < 0) {
+            LOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
+            return ret;
+        }
+
         jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
-        if(jpegData == NULL)
-        {
+        if(jpegData == NULL) {
             LOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
             picturePhyAddr = 0;
             ret = UNKNOWN_ERROR;
         }
 
-        if(picturePhyAddr != 0)
-        {
+        if(picturePhyAddr != 0) {
             rawBuffer = new MemoryBase(mRawHeap, 0, sizeof(struct addrs_cap));
             struct addrs_cap *addrs = (struct addrs_cap *)mRawHeap->base();
 
@@ -1019,23 +1018,29 @@ int CameraHardwareSec::pictureThread()
             addrs[0].height = pictureHeight;
         }
 
-        if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb)
-        {
+        if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
             image_rect_type size;
             size.width  = pictureWidth;
             size.height = pictureHeight;
 
             mNotifyCb(CAMERA_MSG_SHUTTER, (int32_t)&size, 0, mCallbackCookie);
+            flagShutterCallback = true;
         }
 
         mDataCb(CAMERA_MSG_RAW_IMAGE, rawBuffer, mCallbackCookie);
     }
 
-    if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb)
-    {
+    if(!flagShutterCallback && ((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb)) {
+        image_rect_type size;
+        size.width  = pictureWidth;
+        size.height = pictureHeight;
+
+        mNotifyCb(CAMERA_MSG_SHUTTER, (int32_t)&size, 0, mCallbackCookie);
+    }
+
+    if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
         sp<MemoryBase> jpegMem = NULL;
-        if(jpegData != NULL)
-        {
+        if(jpegData != NULL) {
             sp<MemoryHeapBase> jpegHeap = new MemoryHeapBase(jpegSize);
             jpegMem  = new MemoryBase(jpegHeap, 0, jpegSize);
 
