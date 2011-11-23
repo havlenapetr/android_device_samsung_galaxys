@@ -1123,21 +1123,17 @@ int SecCamera::setPreviewSize(int width, int height, int pixel_format)
     return 0;
 }
 
-int SecCamera::getPreviewSize(int *width, int *height, int *frame_size)
+void SecCamera::getPreviewSize(int *width, int *height, int *frame_size)
 {
     *width  = m_preview_width;
     *height = m_preview_height;
     *frame_size = m_frameSize(m_preview_v4lformat, m_preview_width, m_preview_height);
-
-    return 0;
 }
 
-int SecCamera::getPreviewMaxSize(int *width, int *height)
+void SecCamera::getPreviewMaxSize(int *width, int *height)
 {
     *width  = m_preview_max_width;
     *height = m_preview_max_height;
-
-    return 0;
 }
 
 int SecCamera::getPreviewPixelFormat(void)
@@ -1214,7 +1210,7 @@ int SecCamera::endSnapshot(void)
 /*
  * Set Jpeg quality & exif info and get JPEG data from camera ISP
  */
-unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
+unsigned char* SecCamera::getJpeg(unsigned int *jpeg_size, unsigned int *phyaddr)
 {
     LOGV("%s :", __func__);
 
@@ -1222,6 +1218,19 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
     unsigned char *addr;
 
     LOG_TIME_DEFINE(2)
+
+    if(m_camera_id == CAMERA_ID_BACK) {
+        //Date time
+        time_t rawtime;
+        time(&rawtime);
+        struct tm *timeinfo = localtime(&rawtime);
+
+        ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_TIME_INFO, timeinfo);
+        CHECK_PTR(ret);
+
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
+        CHECK_PTR(ret);
+    }
 
     // capture
     ret = fimc_poll(&m_events_c);
@@ -1242,8 +1251,8 @@ unsigned char* SecCamera::getJpeg(int *jpeg_size, unsigned int *phyaddr)
 
     ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     CHECK_PTR(ret);
-    LOGV("\nsnapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d, size = %d\n\n",
-            index, m_snapshot_width, m_snapshot_height, *jpeg_size);
+    LOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
+            index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 
     addr = (unsigned char*)(m_capture_buf.start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
@@ -1529,7 +1538,7 @@ int SecCamera::setSnapshotSize(int width, int height)
     return 0;
 }
 
-int SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
+void SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
 {
     *width  = m_snapshot_width;
     *height = m_snapshot_height;
@@ -1543,11 +1552,9 @@ int SecCamera::getSnapshotSize(int *width, int *height, int *frame_size)
         frame = m_snapshot_width * m_snapshot_height * BPP;
 
     *frame_size = frame;
-
-    return 0;
 }
 
-int SecCamera::getSnapshotMaxSize(int *width, int *height)
+void SecCamera::getSnapshotMaxSize(int *width, int *height)
 {
     switch (m_camera_id) {
     case CAMERA_ID_FRONT:
@@ -1564,8 +1571,6 @@ int SecCamera::getSnapshotMaxSize(int *width, int *height)
 
     *width  = m_snapshot_max_width;
     *height = m_snapshot_max_height;
-
-    return 0;
 }
 
 int SecCamera::setSnapshotPixelFormat(int pixel_format)
@@ -3093,7 +3098,7 @@ status_t SecCamera::dump(int fd, const Vector<String16> &args)
 }
 
 double SecCamera::jpeg_ratio = 0.7;
-int SecCamera::interleaveDataSize = 4261248;
+int SecCamera::interleaveDataSize = 0x360000;
 int SecCamera::jpegLineLength = 636;
 
 }; // namespace android
