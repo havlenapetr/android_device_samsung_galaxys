@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2011 Havlena Petr <havlenapetr@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +15,27 @@
  * limitations under the License.
  */
 
-#include <linux/input.h>
-#include <sys/stat.h>
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <linux/input.h>
 
-#include "recovery_ui.h"
-#include "common.h"
+#include <recovery_ui.h>
+#include <common.h>
+
+#include <cutils/properties.h>
 
 #define ITEM_CHROOT          4
+
+#define RETURN_IF(return_value)                                      \
+    if (return_value < 0) {                                          \
+        ui_print("%s::%d fail. errno: %s\n",                         \
+             __func__, __LINE__, strerror(errno));                   \
+        return return_value;                                         \
+    }
 
 char* MENU_HEADERS[] = { "Volume up/down to move highlight;",
                          "power button to select.",
@@ -33,7 +46,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply update from /sdcard",
                        "wipe data/factory reset",
                        "wipe cache partition",
-                       "start OS from /dev/block/mmcblk1p4",
+                       "start OS from /dev/block/mmcblk1p2",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {
@@ -112,13 +125,41 @@ int device_handle_key(int key_code, int visible) {
     return NO_ACTION;
 }
 
+int start_os_from_chroot() {
+    int ret;
+
+    ui_print("preparing . . .\n");
+    ret = mkdir("/mnt/chroot", 0755);
+    RETURN_IF(ret);
+
+    ui_print("mounting . . .\n");
+    ret = mount("/dev/block/mmcblk1p2", "/mnt/chroot", "ext4", 0, NULL);
+    RETURN_IF(ret);
+
+    ui_print("chrooting . . .\n");
+    ret = chroot("/mnt/chroot");
+    RETURN_IF(ret);
+
+    ui_print("killing adb . . .\n");
+    ret = property_set("persist.service.adb.enable", "0");
+    RETURN_IF(ret);
+
+    ui_print("starting . . .\n");
+    return execlp("/init", "/init", NULL);
+}
+
 int device_perform_action(int which) {
     switch (which) {
         // here we will mount root folder of new OS
         // chroot to this folder and start booting
         case ITEM_CHROOT:
-            ui_print("Not yet implemented\n");
+        {
+            int ret = start_os_from_chroot();
+            if(ret != 0) {
+                ui_print("can't boot OS from chroot!");
+            }
             break;
+        }
     }
     return which;
 }
