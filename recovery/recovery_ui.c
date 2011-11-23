@@ -133,12 +133,12 @@ int start_os_from_chroot() {
     ret = mount("/dev/block/mmcblk1p2", "/mnt/chroot", "ext4", 0, NULL);
     RETURN_IF(ret);
 
-    ui_print("chrooting . . .\n");
-    ret = chroot("/mnt/chroot");
-    RETURN_IF(ret);
-
     ui_print("killing adb . . .\n");
     ret = property_set("persist.service.adb.enable", "0");
+    RETURN_IF(ret);
+
+    ui_print("chrooting . . .\n");
+    ret = chroot("/mnt/chroot");
     RETURN_IF(ret);
 
     ui_print("starting . . .\n");
