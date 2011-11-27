@@ -242,12 +242,6 @@ on boot
 service ueventd /sbin/ueventd
     critical
 
-service console /sbin/sh
-    console
-    disabled
-    user shell
-    group log
-
 service recovery /sbin/recovery --show_text
 
 # adbd is controlled by the persist.service.adb.enable system property
@@ -266,6 +260,3 @@ on property:persist.service.adb.enable=0
 
 on property:persist.service.ueventd.enable=0
     stop ueventd
-
-on property:ro.secure=0
-    start console

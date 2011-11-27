@@ -326,7 +326,7 @@ service tvout /vendor/bin/tvoutserver
     user system
     group graphics
 
-service console /sbin/sh
+service console /system/bin/sh
     console
     disabled
     user shell
