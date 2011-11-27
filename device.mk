@@ -56,9 +56,10 @@ PRODUCT_COPY_FILES += \
         device/samsung/galaxys/fota.rc:root/fota.rc \
         device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
-# Recovery images
+# Recovery images and keys
 PRODUCT_COPY_FILES += \
         device/samsung/galaxys/recovery.fstab:root/system/etc/recovery.fstab \
+        device/samsung/galaxys/keys:root/res/keys \
         bootable/recovery/res/images/icon_error.png:root/res/images/icon_error.png \
         bootable/recovery/res/images/icon_installing.png:root/res/images/icon_installing.png \
         bootable/recovery/res/images/indeterminate1.png:root/res/images/indeterminate1.png \
