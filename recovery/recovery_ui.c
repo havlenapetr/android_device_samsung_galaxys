@@ -24,11 +24,13 @@
 #include <linux/input.h>
 
 #include <recovery_ui.h>
+#include <roots.h>
 #include <common.h>
 
 #include <cutils/properties.h>
 
-#define ITEM_CHROOT          4
+#define ITEM_FORMAT_SYSTEM   4
+#define ITEM_CHROOT          5
 
 #define RETURN_IF(return_value)                                      \
     if (return_value < 0) {                                          \
@@ -46,6 +48,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply update from /sdcard",
                        "wipe data/factory reset",
                        "wipe cache partition",
+                       "format /system",
                        "start OS from /dev/block/mmcblk1p2",
                        NULL };
 
@@ -150,17 +153,26 @@ int start_os_from_chroot() {
 }
 
 int device_perform_action(int which) {
+    int ret;
+
     switch (which) {
+        case ITEM_FORMAT_SYSTEM:
+            ui_print("formating /system\n");
+            ret = format_volume("/system");
+            if(ret != 0) {
+                ui_print("can't format /system!\n");
+            } else {
+                ui_print("formated\n");
+            }
+            break;
         // here we will mount root folder of new OS
         // chroot to this folder and start booting
         case ITEM_CHROOT:
-        {
-            int ret = start_os_from_chroot();
+            ret = start_os_from_chroot();
             if(ret != 0) {
-                ui_print("can't boot OS from chroot!");
+                ui_print("can't boot OS from chroot!\n");
             }
             break;
-        }
     }
     return which;
 }

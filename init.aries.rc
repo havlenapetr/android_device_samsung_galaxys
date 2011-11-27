@@ -21,7 +21,7 @@ on boot
     setprop status.battery.level_scale 9
 
 # disable low power mode
-   write /sys/class/power_supply/battery/charging_mode_booting 0
+    write /sys/class/power_supply/battery/charging_mode_booting 0
 
 # wi-fi
     mkdir /data/misc/wifi/sockets 0770 wifi wifi
@@ -41,22 +41,35 @@ on boot
     chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
 on fs
+    # mount data first, so we can try to mount 
+    # partitions from sdcard for sdcard booting
+    mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime
+
+    # import sdcard boot script
+    import /data/misc/boot.sdcard.rc
+
+    # for rild
+    mkdir /efs 0775 radio radio
+
+    # and start sdboot trigger
+    #setprop ro.boot.type 0
+
 # Include extra init file which contains sdcard boot
     mkdir /mnt/sdboot 0700 system system
     mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
     mount ext4 /mnt/sdboot/system /system bind
     mount ext4 /mnt/sdboot/datadata /datadata bind
     mount ext4 /mnt/sdboot/cache /cache bind
+    mount ext4 /mnt/sdboot/efs /efs bind
 
-    mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
+    # if we won't boot from sdcard, we will try
+    # real mount from device's internal partitions
     #mount yaffs2 mtd@system /system
     #mount yaffs2 mtd@cache /cache
     #mount yaffs2 mtd@datadata /datadata
+    #mount yaffs2 /dev/block/mtdblock4 /efs
 
 # We chown/chmod /efs because mount is run as root + defaults
-    mkdir /efs 0775 radio radio
-    mount ext4 /mnt/sdboot/efs /efs bind
-    #mount yaffs2 /dev/block/mtdblock4 /efs
     chown radio radio /efs
     chmod 770 /efs/bluetooth
     chmod 770 /efs/imei
@@ -309,7 +322,11 @@ service dumpstate /system/bin/dumpstate -s
     disabled
     oneshot
 
-service console /system/bin/sh
+service tvout /vendor/bin/tvoutserver
+    user system
+    group graphics
+
+service console /sbin/sh
     console
     disabled
     user shell
