@@ -24,11 +24,13 @@
 #include <linux/input.h>
 
 #include <recovery_ui.h>
+#include <roots.h>
 #include <common.h>
 
 #include <cutils/properties.h>
 
-#define ITEM_CHROOT          4
+#define ITEM_FORMAT_VOLUME      4
+#define ITEM_CHROOT             5
 
 #define RETURN_IF(return_value)                                      \
     if (return_value < 0) {                                          \
@@ -46,6 +48,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "apply update from /sdcard",
                        "wipe data/factory reset",
                        "wipe cache partition",
+                       "format volume",
                        "start OS from /dev/block/mmcblk1p2",
                        NULL };
 
@@ -59,10 +62,7 @@ int device_recovery_start() {
     // recovery for up to 5 seconds waiting for the userdata partition
     // block device to exist.
 
-    //const char* fn = "/dev/block/platform/s3c-sdhci.0/by-name/userdata";
-    
-    // we are booting from sdcard now, so check if is our partition mounted
-    const char* fn = "/dev/block/mmcblk1p3";
+    const char* fn = "/dev/block/platform/s3c-sdhci.0/by-name/userdata";
 
     int tries = 0;
     int ret;
@@ -136,30 +136,102 @@ int start_os_from_chroot() {
     ret = mount("/dev/block/mmcblk1p2", "/mnt/chroot", "ext4", 0, NULL);
     RETURN_IF(ret);
 
-    ui_print("chrooting . . .\n");
-    ret = chroot("/mnt/chroot");
+    ui_print("killing ueventd . . .\n");
+    ret = property_set("persist.service.ueventd.enable", "0");
     RETURN_IF(ret);
 
     ui_print("killing adb . . .\n");
     ret = property_set("persist.service.adb.enable", "0");
     RETURN_IF(ret);
 
+    ui_print("chrooting . . .\n");
+    ret = chroot("/mnt/chroot");
+    RETURN_IF(ret);
+
     ui_print("starting . . .\n");
     return execlp("/init", "/init", NULL);
 }
 
+extern char**
+prepend_title(const char** headers);
+
+extern int
+get_menu_selection(char** headers, char** items, int menu_only,
+                   int initial_selection);
+
+static void
+device_format_volume()
+{
+    int ret;
+    char** title_headers = NULL;
+
+    char* headers[] = { "Select which volume to format",
+        "",
+        NULL };
+    title_headers = prepend_title((const char**)headers);
+
+    char* items[] = { "/system",
+        "/datadata",
+        "/radio",
+        "/efs",
+        NULL };
+
+    int chosen_item = get_menu_selection(title_headers, items, 1, 0);
+    switch (chosen_item) {
+        case 0:
+            ui_print("formating /system\n");
+            ret = format_volume("/system");
+            if(ret != 0) {
+                ui_print("can't format /system!\n");
+            } else {
+                ui_print("formated\n");
+            }
+            break;
+        case 1:
+            ui_print("formating /datadata\n");
+            ret = format_volume("/datadata");
+            if(ret != 0) {
+                ui_print("can't format /datadata!\n");
+            } else {
+                ui_print("formated\n");
+            }
+            break;
+        case 2:
+            ui_print("formating /radio\n");
+            ret = format_volume("/radio");
+            if(ret != 0) {
+                ui_print("can't format /radio!\n");
+            } else {
+                ui_print("formated\n");
+            }
+            break;
+        case 3:
+            ui_print("formating /efs\n");
+            ret = format_volume("/efs");
+            if(ret != 0) {
+                ui_print("can't format /efs!\n");
+            } else {
+                ui_print("formated\n");
+            }
+            break;
+    }
+}
+
 int device_perform_action(int which) {
+    int ret;
+
     switch (which) {
+        case ITEM_FORMAT_VOLUME:
+            device_format_volume();
+            break;
         // here we will mount root folder of new OS
         // chroot to this folder and start booting
         case ITEM_CHROOT:
-        {
-            int ret = start_os_from_chroot();
+            ret = start_os_from_chroot();
             if(ret != 0) {
-                ui_print("can't boot OS from chroot!");
+                ui_print("can't boot OS from chroot!\n");
             }
             break;
-        }
     }
     return which;
 }

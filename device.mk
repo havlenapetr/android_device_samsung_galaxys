@@ -48,7 +48,6 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/init.rc:root/init.rc \
     device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc \
@@ -56,25 +55,27 @@ PRODUCT_COPY_FILES += \
     device/samsung/galaxys/fota.rc:root/fota.rc \
     device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
-# Recovery images
+# Recovery images and keys
 PRODUCT_COPY_FILES += \
-    bootable/recovery/res/images/icon_error.png:system/etc/recovery/res/images/icon_error.png \
-    bootable/recovery/res/images/icon_installing.png:system/etc/recovery/res/images/icon_installing.png \
-    bootable/recovery/res/images/indeterminate01.png:system/etc/recovery/res/images/indeterminate01.png \
-    bootable/recovery/res/images/indeterminate02.png:system/etc/recovery/res/images/indeterminate02.png \
-    bootable/recovery/res/images/indeterminate03.png:system/etc/recovery/res/images/indeterminate03.png \
-    bootable/recovery/res/images/indeterminate04.png:system/etc/recovery/res/images/indeterminate04.png \
-    bootable/recovery/res/images/indeterminate05.png:system/etc/recovery/res/images/indeterminate05.png \
-    bootable/recovery/res/images/indeterminate06.png:system/etc/recovery/res/images/indeterminate06.png \
-    bootable/recovery/res/images/progress_empty.png:system/etc/recovery/res/images/progress_empty.png \
-    bootable/recovery/res/images/progress_fill.png:system/etc/recovery/res/images/progress_fill.png
+    device/samsung/galaxys/recovery.fstab:root/system/etc/recovery.fstab \
+    device/samsung/galaxys/keys:root/res/keys \
+    bootable/recovery/res/images/icon_error.png:root/res/images/icon_error.png \
+    bootable/recovery/res/images/icon_installing.png:root/res/images/icon_installing.png \
+    bootable/recovery/res/images/indeterminate01.png:root/res/images/indeterminate01.png \
+    bootable/recovery/res/images/indeterminate02.png:root/res/images/indeterminate02.png \
+    bootable/recovery/res/images/indeterminate03.png:root/res/images/indeterminate03.png \
+    bootable/recovery/res/images/indeterminate04.png:root/res/images/indeterminate04.png \
+    bootable/recovery/res/images/indeterminate05.png:root/res/images/indeterminate05.png \
+    bootable/recovery/res/images/indeterminate06.png:root/res/images/indeterminate06.png \
+    bootable/recovery/res/images/progress_empty.png:root/res/images/progress_empty.png \
+    bootable/recovery/res/images/progress_fill.png:root/res/images/progress_fill.png
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
-	device/samsung/galaxys/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
-	device/samsung/galaxys/aries-keypad.kl:system/usr/keylayout/aries-keypad.kl \
-	device/samsung/galaxys/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl
+    device/samsung/galaxys/cypress-touchkey.kl:system/usr/keylayout/cypress-touchkey.kl \
+    device/samsung/galaxys/sec_jack.kl:system/usr/keylayout/sec_jack.kl \
+    device/samsung/galaxys/aries-keypad.kl:system/usr/keylayout/aries-keypad.kl \
+    device/samsung/galaxys/s3c-keypad.kl:system/usr/keylayout/s3c-keypad.kl
 
 # Generated kcm keymaps
 PRODUCT_PACKAGES := \
@@ -110,10 +111,6 @@ PRODUCT_PACKAGES += \
 # fmradio app
 #PRODUCT_PACKAGES += \
 #       FM
-
-# flac library
-PRODUCT_PACKAGES += \
-    libFLAC
 
 # Libs
 PRODUCT_PACKAGES += \

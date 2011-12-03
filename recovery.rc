@@ -26,10 +26,6 @@ loglevel 9
 # Backward compatibility
     symlink /sys/kernel/debug /d
 
-# Right now vendor lives on the same filesystem as system,
-# but someday that may change.
-    symlink /system/vendor /vendor
-
 # create temp folder for recovery
     mkdir /tmp
 
@@ -95,16 +91,7 @@ loglevel 9
     # 5.0 %
     write /dev/cpuctl/bg_non_interactive/cpu.shares 52
 
-on fs
-# mount mtd partitions
-    mkdir /mnt/sdboot 0700 system system
-    mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
-    mount ext4 /mnt/sdboot/system /system bind
-
 on post-fs
-    # symlink res files for recovery
-    symlink /etc/recovery/res /res
-
     # once everything is setup, no need to modify /
     #mount rootfs rootfs / ro remount
 
@@ -238,6 +225,9 @@ on boot
     chown system system /sys/kernel/ipv4/tcp_rmem_max
     chown root radio /proc/cmdline
 
+    setprop ro.build.product aries
+    setprop ro.product.device aries
+
 # Define TCP buffer sizes for various networks
 #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
     setprop net.tcp.buffersize.default 4096,87380,110208,4096,16384,110208
@@ -255,16 +245,7 @@ on boot
 service ueventd /sbin/ueventd
     critical
 
-service console /system/bin/sh
-    console
-    disabled
-    user shell
-    group log
-
-on property:ro.secure=0
-    start console
-
-service recovery /system/bin/recovery --show_text
+service recovery /sbin/recovery --show_text
 
 # adbd is controlled by the persist.service.adb.enable system property
 service adbd /sbin/adbd
@@ -279,3 +260,6 @@ on property:persist.service.adb.enable=1
 
 on property:persist.service.adb.enable=0
     stop adbd
+
+on property:persist.service.ueventd.enable=0
+    stop ueventd

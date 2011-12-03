@@ -1,46 +1,41 @@
 on init
+    export PATH /sbin:/system/bin
+    export ANDROID_ROOT /system
 
-	export PATH /sbin:/system/bin
-
-	export ANDROID_ROOT /system
-
-	mkdir /system
-	mkdir /data
-	mkdir /mnt
-	mount tmpfs nodev /tmp
+    mkdir /system
+    mkdir /data
+    mkdir /mnt
+    mount tmpfs nodev /tmp
  
-	mkdir /mnt/sdboot 0700 system system
-	mount ext4 /dev/block/mmcblk1p3 /mnt/sdboot wait
-	mount ext4 /mnt/sdboot/system /system bind
-	mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
+    mount yaffs2 mtd@system /system
+    mount ext4 /dev/block/mmcblk0p2 /data wait nosuid nodev noatime nodiratime noauto_da_alloc
 
-	mkdir /data/log 0777
-	mkdir /data/anr 0777
+    mkdir /data/log 0777
+    mkdir /data/anr 0777
 
-	chmod 0666 /dev/log/radio
-	chmod 0666 /dev/log/main
-	chmod 0666 /dev/log/event    
+    chmod 0666 /dev/log/radio
+    chmod 0666 /dev/log/main
+    chmod 0666 /dev/log/event    
 
 on boot
-#	write /sys/class/sec/switch/usb_sel PDA
+#   write /sys/class/sec/switch/usb_sel PDA
 
-	ifup lo
-	hostname localhost
-	domainname localdomain
+    ifup lo
+    hostname localhost
+    domainname localdomain
 
-	class_start default
+    class_start default
 
 service debuggerd /system/bin/debuggerd
 
-#service console /bin/sh
 service console /system/bin/sh
-	console
+    console
 
 service playlpm /system/bin/playlpm
-    	user root
+    user root
 
 service immvibed /system/bin/immvibed 
-	oneshot
+    oneshot
 
 service lpmkey /system/bin/charging_mode
-    	user root
+    user root

@@ -3,6 +3,7 @@
 /recovery	mtd		recovery
 /boot		mtd		boot
 /radio		mtd		radio
+/efs		mtd		efs
 
 /system		yaffs2		system
 /cache		yaffs2		cache

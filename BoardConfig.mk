@@ -45,8 +45,8 @@ TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
 BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
 
 # Releasetools
-TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := ./device/samsung/aries-common/releasetools/aries_ota_from_target_files
-TARGET_RELEASETOOL_IMG_FROM_TARGET_SCRIPT := ./device/samsung/aries-common/releasetools/aries_img_from_target_files
+TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_ota_from_target_files
+TARGET_RELEASETOOL_IMG_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_img_from_target_files
 
 # Camera
 USE_CAMERA_STUB := true
@@ -99,10 +99,7 @@ BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_USES_BML_OVER_MTD := true
-BOARD_CUSTOM_BOOTIMG_MK := device/samsung/aries-common/shbootimg.mk
+BOARD_CUSTOM_BOOTIMG_MK := device/samsung/galaxys/shbootimg.mk
 TARGET_RECOVERY_PRE_COMMAND="echo 1 > /cache/.startrecovery; sync;"
 
-# Include aries specific stuff
--include device/samsung/aries-common/Android.mk
-
-TARGET_OTA_ASSERT_DEVICE := galaxys,galaxys,GT-I9000,GT-I9000M,GT-I9000T
+TARGET_OTA_ASSERT_DEVICE := aries,galaxys,GT-I9000,GT-I9000M,GT-I9000T
