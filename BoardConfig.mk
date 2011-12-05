@@ -58,6 +58,9 @@ endif
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
 
+# Hardware rendering
+USE_OPENGL_RENDERER := true
+
 # Video Devices
 #BOARD_USES_OVERLAY := true
 BOARD_V4L2_DEVICE := /dev/video1
