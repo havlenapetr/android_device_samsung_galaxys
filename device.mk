@@ -119,7 +119,7 @@ PRODUCT_PACKAGES += \
 
 # apns config file
 PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/apns-conf.xml:system/etc/apns-conf.xml
+    development/data/etc/apns-conf.xml:system/etc/apns-conf.xml
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
@@ -148,6 +148,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     wifi.interface=eth0 \
     wifi.supplicant_scan_interval=20 \
     ro.telephony.ril_class=samsung \
+    ro.telephony.ril.v3=1 \
     mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
     dalvik.vm.heapsize=32m
 
