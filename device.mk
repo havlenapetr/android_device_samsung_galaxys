@@ -42,13 +42,14 @@ DEVICE_PACKAGE_OVERLAYS := device/samsung/galaxys/overlay
 
 # These are the hardware-specific configuration files
 PRODUCT_COPY_FILES := \
-	device/samsung/galaxys/asound.conf:system/etc/asound.conf \
-	device/samsung/galaxys/vold.fstab:system/etc/vold.fstab \
-	device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg
+    device/samsung/galaxys/asound.conf:system/etc/asound.conf \
+    device/samsung/galaxys/vold.fstab:system/etc/vold.fstab \
+    device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg
 
 # Init files
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
+    device/samsung/galaxys/init.aries.usb.rc:root/init.aries.usb.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc \
     device/samsung/galaxys/lpm.rc:root/lpm.rc \
@@ -123,18 +124,19 @@ PRODUCT_COPY_FILES += \
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
-	frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
-	frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
-	frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
-	frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+    frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
+    frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
+    frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
+    frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
     frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
-	frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
-	frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-	frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
-	frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
-	frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
-	frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
-	packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
+    frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+    frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+    frameworks/base/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
+    frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+    frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+    frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+    frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+    packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 # The OpenGL ES API level that is natively supported by this device.
 # This is a 16.16 fixed point number
@@ -145,10 +147,9 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # Note that the only such settings should be the ones that are too low-level to
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
-    wifi.interface=eth0 \
+    wifi.interface=wlan0 \
     wifi.supplicant_scan_interval=20 \
     ro.telephony.ril_class=samsung \
-    ro.telephony.ril.v3=1 \
     mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
     dalvik.vm.heapsize=32m
 
@@ -176,10 +177,9 @@ PRODUCT_TAGS += dalvik.gc.type-precise
 PRODUCT_LOCALES := hdpi
 
 # kernel modules
-PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/bcm4329.ko:system/lib/modules/bcm4329.ko \
-    device/samsung/galaxys/cifs.ko:system/lib/modules/cifs.ko \
-    device/samsung/galaxys/tun.ko:system/lib/modules/tun.ko
+PRODUCT_COPY_FILES += $(foreach module,\
+    $(wildcard device/samsung/galaxys/*.ko),\
+    $(module):system/lib/modules/$(notdir $(module)))
 
 ifeq ($(TARGET_PREBUILT_KERNEL),)
     LOCAL_KERNEL := device/samsung/galaxys/kernel
@@ -189,6 +189,9 @@ endif
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_KERNEL):kernel
+
+# include wifi firmware
+$(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4329/device-bcm.mk)
 
 # See comment at the top of this file. This is where the other
 # half of the device-specific product definition file takes care

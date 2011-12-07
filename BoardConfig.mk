@@ -37,7 +37,7 @@ TARGET_NO_RADIOIMAGE := true
 
 TARGET_PROVIDES_INIT := true
 TARGET_PROVIDES_INIT_TARGET_RC := true
-TARGET_BOARD_PLATFORM := s5pv210
+TARGET_BOARD_PLATFORM := s5pc110
 TARGET_BOOTLOADER_BOARD_NAME := aries
 TARGET_RECOVERY_UI_LIB := librecovery_ui_aries
 TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
@@ -86,14 +86,18 @@ BOARD_USERDATAIMAGE_PARTITION_SIZE := 2013265920
 BOARD_FLASH_BLOCK_SIZE := 4096
 
 # Connectivity - Wi-Fi
-WPA_SUPPLICANT_VERSION := VER_0_6_X
-BOARD_WPA_SUPPLICANT_DRIVER := WEXT
-BOARD_WLAN_DEVICE := bcm4329
-WIFI_DRIVER_MODULE_PATH     := "/system/lib/modules/bcm4329.ko"
-WIFI_DRIVER_FW_STA_PATH     := "/vendor/firmware/fw_bcm4329.bin"
-WIFI_DRIVER_FW_AP_PATH      := "/vendor/firmware/fw_bcm4329_apsta.bin"
-WIFI_DRIVER_MODULE_NAME     :=  "bcm4329"
-WIFI_DRIVER_MODULE_ARG      :=  "firmware_path=/vendor/firmware/fw_bcm4329.bin nvram_path=/vendor/firmware/nvram_net.txt"
+BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+WPA_SUPPLICANT_VERSION      := VER_0_8_X
+BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_bcmdhd
+BOARD_HOSTAPD_DRIVER        := NL80211
+BOARD_HOSTAPD_PRIVATE_LIB   := lib_driver_cmd_bcmdhd
+BOARD_WLAN_DEVICE           := bcmdhd
+BOARD_WLAN_DEVICE_REV       := bcm4329
+WIFI_DRIVER_MODULE_NAME     := "bcmdhd"
+WIFI_DRIVER_FW_PATH_PARAM   := "/sys/module/bcmdhd/parameters/firmware_path"
+WIFI_DRIVER_FW_PATH_STA     := "/vendor/firmware/fw_bcmdhd.bin"
+WIFI_DRIVER_FW_PATH_P2P     := "/vendor/firmware/fw_bcmdhd_p2p.bin"
+WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
 
 # Vold
 BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true
