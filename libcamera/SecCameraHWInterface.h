@@ -23,58 +23,60 @@
 #include "SecCameraParameters.h"
 
 #include <utils/threads.h>
-#include <camera/CameraHardwareInterface.h>
 #include <binder/MemoryBase.h>
 #include <binder/MemoryHeapBase.h>
-#include <utils/threads.h>
+
+#include <hardware/camera.h>
 
 namespace android {
-class CameraHardwareSec : public CameraHardwareInterface {
+class CameraHardwareSec {
 public:
-    virtual sp<IMemoryHeap> getPreviewHeap() const;
-    virtual sp<IMemoryHeap> getRawHeap() const;
+    CameraHardwareSec(int cameraId);
+    ~CameraHardwareSec();
 
-    virtual void        setCallbacks(notify_callback notify_cb,
-                                     data_callback data_cb,
-                                     data_callback_timestamp data_cb_timestamp,
-                                     void *user);
+    sp<IMemoryHeap> getPreviewHeap() const;
+    sp<IMemoryHeap> getRawHeap() const;
 
-    virtual void        enableMsgType(int32_t msgType);
-    virtual void        disableMsgType(int32_t msgType);
-    virtual bool        msgTypeEnabled(int32_t msgType);
+    void        setCallbacks(camera_notify_callback notify_cb,
+                             camera_data_callback data_cb,
+                             camera_data_timestamp_callback data_cb_timestamp,
+                             camera_request_memory get_memory,
+                             void *user);
 
-    virtual status_t    startPreview();
+    void        enableMsgType(int32_t msgType);
+    void        disableMsgType(int32_t msgType);
+    bool        msgTypeEnabled(int32_t msgType);
+
+    status_t    setPreviewWindow(struct preview_stream_ops *window);
+    status_t    storeMetaDataInBuffers(bool enable);
+
+    status_t    startPreview();
 #if defined(BOARD_USES_OVERLAY)
-    virtual bool        useOverlay();
-    virtual status_t    setOverlay(const sp<Overlay> &overlay);
+    bool        useOverlay();
+    status_t    setOverlay(const sp<Overlay> &overlay);
 #endif
-    virtual void        stopPreview();
-    virtual bool        previewEnabled();
+    void        stopPreview();
+    bool        previewEnabled();
 
-    virtual status_t    startRecording();
-    virtual void        stopRecording();
-    virtual bool        recordingEnabled();
-    virtual void        releaseRecordingFrame(const sp<IMemory> &mem);
+    status_t    startRecording();
+    void        stopRecording();
+    bool        recordingEnabled();
+    void        releaseRecordingFrame(const sp<IMemory> &mem);
 
-    virtual status_t    autoFocus();
-    virtual status_t    cancelAutoFocus();
-    virtual status_t    takePicture();
-    virtual status_t    cancelPicture();
-    virtual status_t    dump(int fd, const Vector<String16> &args) const;
-    virtual status_t    setParameters(const CameraParameters& params);
-    virtual CameraParameters  getParameters() const;
-    virtual status_t    sendCommand(int32_t command, int32_t arg1,
+    status_t    autoFocus();
+    status_t    cancelAutoFocus();
+    status_t    takePicture();
+    status_t    cancelPicture();
+    /*status_t    dump(int fd, const Vector<String16> &args) const;*/
+    status_t    setParameters(const char *parameters);
+    status_t    setParameters(const CameraParameters& params);
+    char*       getParameters() const;
+    void        putParameters(char *parms);
+    status_t    sendCommand(int32_t command, int32_t arg1,
                                     int32_t arg2);
-    virtual void        release();
-
-    static    sp<CameraHardwareInterface> createInstance(int cameraId);
+    void        release();
 
 private:
-                        CameraHardwareSec(int cameraId);
-    virtual             ~CameraHardwareSec();
-
-    static wp<CameraHardwareInterface> singleton;
-
     static  const int   kBufferCount = MAX_BUFFERS;
     static  const int   kBufferCountForHd = MAX_BUFFERS_HD;
 
@@ -183,32 +185,32 @@ private:
     sp<MemoryHeapBase>  mRecordHeap;
     sp<MemoryHeapBase>  mJpegHeap;
 
-            SecCamera   *mSecCamera;
-            const __u8  *mCameraSensorName;
+    SecCamera           *mSecCamera;
+    const __u8          *mCameraSensorName;
 
     mutable Mutex       mSkipFrameLock;
-            int         mSkipFrame;
+    int                 mSkipFrame;
 
 #if defined(BOARD_USES_OVERLAY)
-            sp<Overlay> mOverlay;
-            bool        mUseOverlay;
-            int         mOverlayBufferIdx;
+    sp<Overlay>         mOverlay;
+    bool                mUseOverlay;
+    int                 mOverlayBufferIdx;
 #endif
 
-    notify_callback     mNotifyCb;
-    data_callback       mDataCb;
-    data_callback_timestamp mDataCbTimestamp;
-            void        *mCallbackCookie;
+    camera_notify_callback mNotifyCb;
+    camera_data_callback mDataCb;
+    camera_data_timestamp_callback mDataCbTimestamp;
+    void                *mCallbackCookie;
 
-            int32_t     mMsgEnabled;
+    int32_t             mMsgEnabled;
 
-            bool        mRecordRunning;
+    bool                mRecordRunning;
     mutable Mutex       mRecordLock;
-            int         mPostViewWidth;
-            int         mPostViewHeight;
-            int         mPostViewSize;
+    int                 mPostViewWidth;
+    int                 mPostViewHeight;
+    int                 mPostViewSize;
 
-            Vector<Size> mSupportedPreviewSizes;
+    Vector<Size>        mSupportedPreviewSizes;
 };
 
 }; // namespace android

@@ -3086,6 +3086,7 @@ inline int SecCamera::m_frameSize(int format, int width, int height)
     return size;
 }
 
+/*
 status_t SecCamera::dump(int fd, const Vector<String16> &args)
 {
     const size_t SIZE = 256;
@@ -3096,6 +3097,7 @@ status_t SecCamera::dump(int fd, const Vector<String16> &args)
     ::write(fd, result.string(), result.size());
     return NO_ERROR;
 }
+*/
 
 double SecCamera::jpeg_ratio = 0.7;
 int SecCamera::interleaveDataSize = 0x360000;
