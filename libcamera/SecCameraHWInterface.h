@@ -21,7 +21,6 @@
 
 #include "SecCamera.h"
 #include "SecCameraParameters.h"
-//#include "SecNativeWindow.h"
 
 #include <utils/threads.h>
 #include <binder/MemoryBase.h>
@@ -35,7 +34,6 @@ public:
     CameraHardwareSec(int cameraId);
     ~CameraHardwareSec();
 
-    sp<IMemoryHeap> getPreviewHeap() const;
     sp<IMemoryHeap> getRawHeap() const;
 
     void        setCallbacks(camera_notify_callback notify_cb,
@@ -181,7 +179,7 @@ private:
     CameraParameters    mParameters;
     CameraParameters    mInternalParameters;
 
-    sp<MemoryHeapBase>  mPreviewHeap;
+    camera_memory_t*    mPreviewMemory;
     sp<MemoryHeapBase>  mRawHeap;
     sp<MemoryHeapBase>  mRecordHeap;
     sp<MemoryHeapBase>  mJpegHeap;
@@ -197,12 +195,13 @@ private:
     bool                mUseOverlay;
     int                 mOverlayBufferIdx;
 #endif
-    
-    //SecNativeWindow*    mSecWindow;
+
+    preview_stream_ops* mWindow;
 
     camera_notify_callback mNotifyCb;
     camera_data_callback mDataCb;
     camera_data_timestamp_callback mDataCbTimestamp;
+    camera_request_memory mMemoryCbRequest;
     void                *mCallbackCookie;
 
     int32_t             mMsgEnabled;

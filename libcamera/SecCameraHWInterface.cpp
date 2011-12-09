@@ -67,7 +67,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
           mCaptureInProgress(false),
           mParameters(),
-          mPreviewHeap(0),
+          mPreviewMemory(0),
           mRawHeap(0),
           mRecordHeap(0),
           mJpegHeap(0),
@@ -86,7 +86,8 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mRecordRunning(false),
           mPostViewWidth(0),
           mPostViewHeight(0),
-          mPostViewSize(0)
+          mPostViewSize(0),
+          mWindow(NULL)
 {
     LOGV("%s :", __func__);
     mSecCamera = SecCamera::createInstance();
@@ -392,11 +393,6 @@ CameraHardwareSec::~CameraHardwareSec()
     release();
 }
 
-sp<IMemoryHeap> CameraHardwareSec::getPreviewHeap() const
-{
-    return mPreviewHeap;
-}
-
 sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
 {
     return mRawHeap;
@@ -404,9 +400,20 @@ sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
 
 status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
-    //mSecWindow = new SecNativeWindow(window);
-    //window->set_buffer_count(window, kBufferCount);
+    LOGI("%s :", __func__);
 
+    if(!window) {
+        LOGI("NULL ANativeWindow passed to setPreviewWindow");
+        if (mWindow) {
+            free(mWindow);
+        }
+        goto end;
+    }
+
+    mWindow = window;
+    mWindow->set_buffer_count(mWindow, kBufferCount);
+
+end:
     return NO_ERROR;
 }
 
@@ -424,6 +431,7 @@ void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
     mNotifyCb = notify_cb;
     mDataCb = data_cb;
     mDataCbTimestamp = data_cb_timestamp;
+    mMemoryCbRequest = get_memory;
     mCallbackCookie = user;
 }
 
@@ -485,11 +493,14 @@ int CameraHardwareSec::previewThreadWrapper()
 int CameraHardwareSec::previewThread()
 {
     int             index;
-    nsecs_t         timestamp;
     unsigned int    phyYAddr;
     unsigned int    phyCAddr;
     struct addrs*   addrs;
     int             width, height, frame_size, offset;
+
+    if(!mWindow) {
+        return NO_ERROR;
+    }
 
     index = mSecCamera->getPreview();
     if (index < 0) {
@@ -504,22 +515,22 @@ int CameraHardwareSec::previewThread()
     }
     mSkipFrameLock.unlock();
 
-    timestamp = systemTime(SYSTEM_TIME_MONOTONIC);
-
     phyYAddr = mSecCamera->getPhyAddrY(index);
     phyCAddr = mSecCamera->getPhyAddrC(index);
-
     if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
-        LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
+        LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x",
+             __func__, phyYAddr, phyCAddr);
         return UNKNOWN_ERROR;
     }
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
     offset = (frame_size + 16) * index;
-    sp<MemoryBase> buffer = new MemoryBase(mPreviewHeap, offset, frame_size);
 
-    memcpy(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size    ), &phyYAddr, 4);
-    memcpy(static_cast<unsigned char *>(mPreviewHeap->base()) + (offset + frame_size + 4), &phyCAddr, 4);
+    // copy memory from camera to android's preview memory
+    memcpy(static_cast<unsigned char *> (mPreviewMemory->data) + (offset + frame_size    ),
+           &phyYAddr, 4);
+    memcpy(static_cast<unsigned char *> (mPreviewMemory->data) + (offset + frame_size + 4),
+           &phyCAddr, 4);
 
 #if defined(BOARD_USES_OVERLAY)
     if (mUseOverlay) {
@@ -545,9 +556,12 @@ int CameraHardwareSec::previewThread()
 
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
-        //mDataCb(CAMERA_MSG_PREVIEW_FRAME, buffer, mCallbackCookie);
+        mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewMemory, index, NULL, mCallbackCookie);
+    } else {
+        // here we should work with mWindow
     }
 
+    /*
     Mutex::Autolock lock(mRecordLock);
     if (mRecordRunning == true) {
         index = mSecCamera->getRecordFrame();
@@ -578,13 +592,14 @@ int CameraHardwareSec::previewThread()
             mSecCamera->releaseRecordFrame(index);
         }
     }
-
+    */
     return NO_ERROR;
 }
 
 status_t CameraHardwareSec::startPreview()
 {
     int ret = 0;        //s1 [Apply factory standard]
+    int width, height, frame_size, previewHeapSize;
 
     LOGI("%s :", __func__);
 
@@ -604,30 +619,34 @@ status_t CameraHardwareSec::startPreview()
 
     setSkipFrame(INITIAL_SKIP_FRAME);
 
-    ret  = mSecCamera->startPreview();
+    ret = mSecCamera->startPreview();
     if (ret < 0) {
         LOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
         return UNKNOWN_ERROR;
     }
 
-    if (mPreviewHeap != NULL)
-        mPreviewHeap.clear();
+    if(mPreviewMemory) {
+        mPreviewMemory->release(mPreviewMemory);
+    }
 
-    int width, height, frame_size;
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    int previewHeapSize = (frame_size + 16) * kBufferCount;
+    previewHeapSize = (frame_size + 16) * kBufferCount;
 
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
-            (int)mSecCamera->getCameraFd(), (size_t)(previewHeapSize), width, height);
-    mPreviewHeap = new MemoryHeapBase((int)mSecCamera->getCameraFd(), (size_t)(previewHeapSize), (uint32_t)0);
-    if (mPreviewHeap->getHeapID() < 0) {
+            mSecCamera->getCameraFd(), (size_t)(previewHeapSize), width, height);
+
+    mPreviewMemory = mMemoryCbRequest(mSecCamera->getCameraFd(),
+                                    (size_t)previewHeapSize,
+                                    kBufferCount,
+                                    mCallbackCookie);
+    if (!mPreviewMemory) {
         LOGE("ERR(%s): Preview heap creation fail", __func__);
-        mPreviewHeap.clear();
         return NO_MEMORY;
     }
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",mPostViewWidth,mPostViewHeight,mPostViewSize);
+    LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
+         mPostViewWidth,mPostViewHeight,mPostViewSize);
 
     mPreviewRunning = true;
     mPreviewCondition.signal();
@@ -2198,11 +2217,10 @@ void CameraHardwareSec::release()
         mJpegHeap = NULL;
     }
 
-    if (mPreviewHeap != NULL) {
-        LOGI("%s: calling mPreviewHeap.dispose()", __func__);
-        mPreviewHeap->dispose();
-        mPreviewHeap.clear();
-        mPreviewHeap = NULL;
+    if (mPreviewMemory != NULL) {
+        LOGI("%s: releasing preview memory", __func__);
+        mPreviewMemory->release(mPreviewMemory);
+        mPreviewMemory = NULL;
     }
 
     if (mRecordHeap != NULL) {
