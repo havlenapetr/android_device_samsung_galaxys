@@ -400,17 +400,16 @@ sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
 
 status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
+    Mutex::Autolock lock(mPreviewLock);
+
     LOGI("%s :", __func__);
 
+    mWindow = window;
     if(!window) {
         LOGI("NULL ANativeWindow passed to setPreviewWindow");
-        if (mWindow) {
-            free(mWindow);
-        }
         goto end;
     }
 
-    mWindow = window;
     mWindow->set_buffer_count(mWindow, kBufferCount);
 
 end:
