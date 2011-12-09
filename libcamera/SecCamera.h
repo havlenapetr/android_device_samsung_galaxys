@@ -39,7 +39,7 @@
 
 #include "JpegEncoder.h"
 
-#include <camera/CameraHardwareInterface.h>
+#include <utils/threads.h>
 
 namespace android {
 
@@ -280,7 +280,6 @@ public:
         static SecCamera singleton;
         return &singleton;
     }
-    status_t dump(int fd, const Vector<String16>& args);
 
     int             flagCreate(void) const;
 

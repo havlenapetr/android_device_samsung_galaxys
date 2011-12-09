@@ -17,7 +17,7 @@
 ** limitations under the License.
 */
 
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 #define LOG_TAG "CameraHardwareSec"
 #include <utils/Log.h>
 
@@ -383,7 +383,7 @@ CameraHardwareSec::~CameraHardwareSec()
 {
     LOGV("%s :", __func__);
 
-    singleton.clear();
+    release();
 }
 
 sp<IMemoryHeap> CameraHardwareSec::getPreviewHeap() const
@@ -396,10 +396,21 @@ sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
     return mRawHeap;
 }
 
-void CameraHardwareSec::setCallbacks(notify_callback notify_cb,
-                                      data_callback data_cb,
-                                      data_callback_timestamp data_cb_timestamp,
-                                      void *user)
+status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
+{
+    return NO_ERROR;
+}
+
+status_t CameraHardwareSec::storeMetaDataInBuffers(bool enable)
+{
+    return NO_ERROR;
+}
+
+void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
+                                     camera_data_callback data_cb,
+                                     camera_data_timestamp_callback data_cb_timestamp,
+                                     camera_request_memory get_memory,
+                                     void *user)
 {
     mNotifyCb = notify_cb;
     mDataCb = data_cb;
@@ -527,7 +538,7 @@ int CameraHardwareSec::previewThread()
 
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
-        mDataCb(CAMERA_MSG_PREVIEW_FRAME, buffer, mCallbackCookie);
+        //mDataCb(CAMERA_MSG_PREVIEW_FRAME, buffer, mCallbackCookie);
     }
 
     Mutex::Autolock lock(mRecordLock);
@@ -555,7 +566,7 @@ int CameraHardwareSec::previewThread()
 
         // Notify the client of a new frame.
         if (mMsgEnabled & CAMERA_MSG_VIDEO_FRAME) {
-            mDataCbTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, buffer, mCallbackCookie);
+            //mDataCbTimestamp(timestamp, CAMERA_MSG_VIDEO_FRAME, buffer, mCallbackCookie);
         } else {
             mSecCamera->releaseRecordFrame(index);
         }
@@ -1053,23 +1064,15 @@ int CameraHardwareSec::pictureThread()
         }
 
         if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
-            image_rect_type size;
-            size.width  = pictureWidth;
-            size.height = pictureHeight;
-
-            mNotifyCb(CAMERA_MSG_SHUTTER, (int32_t)&size, 0, mCallbackCookie);
+            mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
             flagShutterCallback = true;
         }
 
-        mDataCb(CAMERA_MSG_RAW_IMAGE, rawBuffer, mCallbackCookie);
+        //mDataCb(CAMERA_MSG_RAW_IMAGE, rawBuffer, mCallbackCookie);
     }
 
     if(!flagShutterCallback && ((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb)) {
-        image_rect_type size;
-        size.width  = pictureWidth;
-        size.height = pictureHeight;
-
-        mNotifyCb(CAMERA_MSG_SHUTTER, (int32_t)&size, 0, mCallbackCookie);
+        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
     }
 
     if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
@@ -1095,7 +1098,7 @@ int CameraHardwareSec::pictureThread()
             jpegMem  = new MemoryBase(jpegHeap, 0, jpegSize + jpegExifSize);
         }
 
-        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, mCallbackCookie);
+        //mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, mCallbackCookie);
     }
 
 out:
@@ -1367,6 +1370,7 @@ int CameraHardwareSec::decodeInterleaveData(unsigned char *pInterleaveData,
     return ret;
 }
 
+/*
 status_t CameraHardwareSec::dump(int fd, const Vector<String16>& args) const
 {
     const size_t SIZE = 256;
@@ -1385,6 +1389,7 @@ status_t CameraHardwareSec::dump(int fd, const Vector<String16>& args) const
     write(fd, result.string(), result.size());
     return NO_ERROR;
 }
+*/
 
 bool CameraHardwareSec::isSupportedPreviewSize(const int width,
                                                const int height) const
@@ -1398,6 +1403,23 @@ bool CameraHardwareSec::isSupportedPreviewSize(const int width,
     }
 
     return false;
+}
+
+void CameraHardwareSec::putParameters(char *parms)
+{
+    free(parms);
+}
+
+status_t CameraHardwareSec::setParameters(const char *parameters)
+{
+    LOGV("%s :", __func__);
+
+    CameraParameters params;
+
+    String8 str_params(parameters);
+    params.unflatten(str_params);
+
+    return setParameters(params);
 }
 
 status_t CameraHardwareSec::setParameters(const CameraParameters& params)
@@ -2097,10 +2119,20 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     return ret;
 }
 
-CameraParameters CameraHardwareSec::getParameters() const
+char* CameraHardwareSec::getParameters() const
 {
+    String8     params_str8;
+    char*       params_str;
+
     LOGV("%s :", __func__);
-    return mParameters;
+
+    params_str8 = mParameters.flatten();
+    
+    // camera service frees this string...
+    params_str = (char*) malloc(sizeof(char) * (params_str8.length() + 1));
+    strcpy(params_str, params_str8.string());
+
+    return params_str;
 }
 
 status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t arg2)
@@ -2129,6 +2161,7 @@ void CameraHardwareSec::release()
         mPreviewCondition.signal();
         mPreviewThread->requestExitAndWait();
         mPreviewThread.clear();
+        mPreviewThread = NULL;
     }
     if (mAutoFocusThread != NULL) {
         /* this thread is normally already in it's threadLoop but blocked
@@ -2141,25 +2174,34 @@ void CameraHardwareSec::release()
         mFocusLock.unlock();
         mAutoFocusThread->requestExitAndWait();
         mAutoFocusThread.clear();
+        mAutoFocusThread = NULL;
     }
     if (mPictureThread != NULL) {
         mPictureThread->requestExitAndWait();
         mPictureThread.clear();
+        mPictureThread = NULL;
     }
-    if (mRawHeap != NULL)
+    if (mRawHeap != NULL) {
         mRawHeap.clear();
+        mRawHeap = NULL;
+    }
 
-    if (mJpegHeap != NULL)
+    if (mJpegHeap != NULL) {
         mJpegHeap.clear();
+        mJpegHeap = NULL;
+    }
 
     if (mPreviewHeap != NULL) {
         LOGI("%s: calling mPreviewHeap.dispose()", __func__);
         mPreviewHeap->dispose();
         mPreviewHeap.clear();
+        mPreviewHeap = NULL;
     }
 
-    if (mRecordHeap != NULL)
+    if (mRecordHeap != NULL) {
         mRecordHeap.clear();
+        mRecordHeap = NULL;
+    }
 
 #if defined(BOARD_USES_OVERLAY)
     if (mUseOverlay) {
@@ -2172,51 +2214,10 @@ void CameraHardwareSec::release()
     /* close after all the heaps are cleared since those
      * could have dup'd our file descriptor.
      */
-    mSecCamera->deinitCamera();
-    mSecCamera = NULL;
-
-}
-
-wp<CameraHardwareInterface> CameraHardwareSec::singleton;
-
-sp<CameraHardwareInterface> CameraHardwareSec::createInstance(int cameraId)
-{
-    LOGV("%s :", __func__);
-    if (singleton != 0) {
-        sp<CameraHardwareInterface> hardware = singleton.promote();
-        if (hardware != 0) {
-            return hardware;
-        }
+    if(mSecCamera != NULL) {
+        mSecCamera->deinitCamera();
+        mSecCamera = NULL;
     }
-    sp<CameraHardwareInterface> hardware(new CameraHardwareSec(cameraId));
-    singleton = hardware;
-    return hardware;
-}
-
-static CameraInfo sCameraInfo[] = {
-    {
-        CAMERA_FACING_BACK,
-        90,  /* orientation */
-    },
-    {
-        CAMERA_FACING_FRONT,
-        270,  /* orientation */
-    }
-};
-
-extern "C" int HAL_getNumberOfCameras()
-{
-    return sizeof(sCameraInfo) / sizeof(sCameraInfo[0]);
-}
-
-extern "C" void HAL_getCameraInfo(int cameraId, struct CameraInfo *cameraInfo)
-{
-    memcpy(cameraInfo, &sCameraInfo[cameraId], sizeof(CameraInfo));
-}
-
-extern "C" sp<CameraHardwareInterface> HAL_openCameraHardware(int cameraId)
-{
-    return CameraHardwareSec::createInstance(cameraId);
 }
 
 }; // namespace android
