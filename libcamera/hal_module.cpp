@@ -380,11 +380,12 @@ int camera_device_open(const hw_module_t* module, const char* name,
 {
     Mutex::Autolock lock(gCameraHalDeviceLock);
 
-    int rv = 0;
-    int num_cameras = 0;
-    int cameraid;
-    sec_camera_device_t* camera_device = NULL;
-    camera_device_ops_t* camera_ops = NULL;
+    int                     rv = 0;
+    int                     num_cameras = 0;
+    int                     cameraid;
+    sec_camera_device_t*    camera_device = NULL;
+    camera_device_ops_t*    camera_ops = NULL;
+    CameraHardwareSec*      camera_hw = NULL;
 
     LOGI("camera_device open");
 
@@ -392,8 +393,7 @@ int camera_device_open(const hw_module_t* module, const char* name,
         cameraid = atoi(name);
         num_cameras = sizeof(gCameraInfo);
 
-        if(cameraid > num_cameras)
-        {
+        if(cameraid > num_cameras) {
             LOGE("camera service provided cameraid out of bounds, "
                     "cameraid = %d, num supported = %d",
                     cameraid, num_cameras);
@@ -401,24 +401,21 @@ int camera_device_open(const hw_module_t* module, const char* name,
             goto fail;
         }
 
-        if(gCamerasOpen >= MAX_SIMUL_CAMERAS_SUPPORTED)
-        {
+        if(gCamerasOpen >= MAX_SIMUL_CAMERAS_SUPPORTED) {
             LOGE("maximum number of cameras already open");
             rv = -ENOMEM;
             goto fail;
         }
 
         camera_device = (sec_camera_device_t*)malloc(sizeof(*camera_device));
-        if(!camera_device)
-        {
+        if(!camera_device) {
             LOGE("camera_device allocation fail");
             rv = -ENOMEM;
             goto fail;
         }
 
         camera_ops = (camera_device_ops_t*)malloc(sizeof(*camera_ops));
-        if(!camera_ops)
-        {
+        if(!camera_ops) {
             LOGE("camera_ops allocation fail");
             rv = -ENOMEM;
             goto fail;
@@ -461,7 +458,13 @@ int camera_device_open(const hw_module_t* module, const char* name,
 
         // -------- Sec specific stuff --------
 
-        camera_device->cam = new CameraHardwareSec(cameraid);
+        camera_hw = new CameraHardwareSec(cameraid);
+        rv = camera_hw->init();
+        if(rv != NO_ERROR) {
+            goto fail;
+        }
+
+        camera_device->cam = camera_hw;
 
         gCamerasOpen++;
     }
@@ -477,8 +480,8 @@ fail:
         free(camera_ops);
         camera_ops = NULL;
     }
-    if(camera_device->cam) {
-        delete camera_device->cam;
+    if(camera_hw) {
+        delete camera_hw;
         camera_device->cam = NULL;
     }
     *device = NULL;

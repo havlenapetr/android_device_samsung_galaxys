@@ -17,7 +17,7 @@
 ** limitations under the License.
 */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "CameraHardwareSec"
 #include <utils/Log.h>
 
@@ -89,27 +89,31 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mPostViewSize(0)
 {
     LOGV("%s :", __func__);
-    int ret = 0;
-
     mSecCamera = SecCamera::createInstance();
-
+    
     if (mSecCamera == NULL) {
         LOGE("ERR(%s):Fail on mSecCamera object creation", __func__);
+        return;
     }
-
-    ret = mSecCamera->initCamera(cameraId);
+    
+    int ret = mSecCamera->initCamera(cameraId);
     if (ret < 0) {
         LOGE("ERR(%s):Fail on mSecCamera init", __func__);
+        return;
     }
+}
 
+status_t CameraHardwareSec::init()
+{
     if (mSecCamera->flagCreate() == 0) {
         LOGE("ERR(%s):Fail on mSecCamera->flagCreate()", __func__);
+        return UNKNOWN_ERROR;
     }
-
+    
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
     LOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
-            mPostViewWidth,mPostViewHeight,mPostViewSize);
-
+         mPostViewWidth,mPostViewHeight,mPostViewSize);
+    
     int rawHeapSize = mPostViewSize;
     LOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
     mRawHeap = new MemoryHeapBase(rawHeapSize);
@@ -117,9 +121,9 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
         LOGE("ERR(%s): Raw heap creation fail", __func__);
         mRawHeap.clear();
     }
-
-    initDefaultParameters(cameraId);
-
+    
+    initDefaultParameters(mSecCamera->getCameraId());
+    
     mExitAutoFocusThread = false;
     mExitPreviewThread = false;
     /* whether the PreviewThread is active in preview or stopped.  we
@@ -129,6 +133,8 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
     mPreviewThread = new PreviewThread(this);
     mAutoFocusThread = new AutoFocusThread(this);
     mPictureThread = new PictureThread(this);
+    
+    return NO_ERROR;
 }
 
 void CameraHardwareSec::initDefaultParameters(int cameraId)
@@ -398,6 +404,9 @@ sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
 
 status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
+    //mSecWindow = new SecNativeWindow(window);
+    //window->set_buffer_count(window, kBufferCount);
+
     return NO_ERROR;
 }
 
@@ -475,11 +484,12 @@ int CameraHardwareSec::previewThreadWrapper()
 
 int CameraHardwareSec::previewThread()
 {
-    int index;
-    nsecs_t timestamp;
-    unsigned int phyYAddr;
-    unsigned int phyCAddr;
-    struct addrs *addrs;
+    int             index;
+    nsecs_t         timestamp;
+    unsigned int    phyYAddr;
+    unsigned int    phyCAddr;
+    struct addrs*   addrs;
+    int             width, height, frame_size, offset;
 
     index = mSecCamera->getPreview();
     if (index < 0) {
@@ -502,12 +512,9 @@ int CameraHardwareSec::previewThread()
     if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
         LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
         return UNKNOWN_ERROR;
-     }
-
-    int width, height, frame_size, offset;
+    }
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-
     offset = (frame_size + 16) * index;
     sp<MemoryBase> buffer = new MemoryBase(mPreviewHeap, offset, frame_size);
 
@@ -579,7 +586,7 @@ status_t CameraHardwareSec::startPreview()
 {
     int ret = 0;        //s1 [Apply factory standard]
 
-    LOGV("%s :", __func__);
+    LOGI("%s :", __func__);
 
     Mutex::Autolock lock(mStateLock);
     if (mCaptureInProgress) {

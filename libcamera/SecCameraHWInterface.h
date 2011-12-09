@@ -21,6 +21,7 @@
 
 #include "SecCamera.h"
 #include "SecCameraParameters.h"
+//#include "SecNativeWindow.h"
 
 #include <utils/threads.h>
 #include <binder/MemoryBase.h>
@@ -63,11 +64,11 @@ public:
     bool        recordingEnabled();
     void        releaseRecordingFrame(const sp<IMemory> &mem);
 
+    status_t    init();
     status_t    autoFocus();
     status_t    cancelAutoFocus();
     status_t    takePicture();
     status_t    cancelPicture();
-    /*status_t    dump(int fd, const Vector<String16> &args) const;*/
     status_t    setParameters(const char *parameters);
     status_t    setParameters(const CameraParameters& params);
     char*       getParameters() const;
@@ -196,6 +197,8 @@ private:
     bool                mUseOverlay;
     int                 mOverlayBufferIdx;
 #endif
+    
+    //SecNativeWindow*    mSecWindow;
 
     camera_notify_callback mNotifyCb;
     camera_data_callback mDataCb;
