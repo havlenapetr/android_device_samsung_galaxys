@@ -85,38 +85,38 @@ PRODUCT_PACKAGES := \
 
 # Filesystem management tools
 PRODUCT_PACKAGES += \
-	make_ext4fs \
-	setup_fs
+    make_ext4fs \
+    setup_fs
 
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
-	device/samsung/galaxys/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
-	device/samsung/galaxys/media_profiles.xml:system/etc/media_profiles.xml
+    device/samsung/galaxys/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
+    device/samsung/galaxys/media_profiles.xml:system/etc/media_profiles.xml
 
 # These are the OpenMAX IL modules
 PRODUCT_PACKAGES += \
-	libSEC_OMX_Core.aries \
-	libOMX.SEC.AVC.Decoder.aries \
-	libOMX.SEC.M4V.Decoder.aries \
-	libOMX.SEC.M4V.Encoder.aries \
-	libOMX.SEC.AVC.Encoder.aries
+    libSEC_OMX_Core.aries \
+    libOMX.SEC.AVC.Decoder.aries \
+    libOMX.SEC.M4V.Decoder.aries \
+    libOMX.SEC.M4V.Encoder.aries \
+    libOMX.SEC.AVC.Encoder.aries
 
 # Misc other modules
 PRODUCT_PACKAGES += \
-	lights.aries \
-	overlay.aries \
-	sensors.aries \
+    lights.aries \
+    overlay.aries \
+    sensors.aries \
     audio.primary.aries \
- 	audio_policy.aries
+    audio_policy.aries \
+    camera.aries.so
 
 # fmradio app
 #PRODUCT_PACKAGES += \
-#       FM
+#   FM
 
 # Libs
 PRODUCT_PACKAGES += \
-	libcamera \
-	libstagefrighthw
+    libstagefrighthw
 
 # apns config file
 PRODUCT_COPY_FILES += \

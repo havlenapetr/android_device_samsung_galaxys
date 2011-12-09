@@ -48,12 +48,6 @@ BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
 TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_ota_from_target_files
 TARGET_RELEASETOOL_IMG_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_img_from_target_files
 
-# Camera
-USE_CAMERA_STUB := true
-ifeq ($(USE_CAMERA_STUB),false)
-BOARD_CAMERA_LIBRARIES := libcamera
-endif
-
 # Bluetooth
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true
