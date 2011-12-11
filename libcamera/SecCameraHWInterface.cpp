@@ -33,6 +33,11 @@
 #define ALL_BUFFERS_FLUSHED     -66
 #endif
 
+#include <ui/egl/android_natives.h>
+#include <ui/GraphicBufferMapper.h>
+
+#define HAL_PIXEL_FORMAT_NV12           0x100
+
 #define VIDEO_COMMENT_MARKER_H          0xFFBE
 #define VIDEO_COMMENT_MARKER_L          0xFFBF
 #define VIDEO_COMMENT_MARKER_LENGTH     4
@@ -44,6 +49,17 @@
 #define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
 #define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.20,0.25,Infinity"
+
+#define CHECK_WINDOW_INIT(err)                                       \
+    if (err < 0) {                                                   \
+        LOGE("%s::%d failed: %s (%d)", __func__, __LINE__,           \
+            strerror(-err), -err);                                   \
+        if (ENODEV == err) {                                         \
+            LOGE("Preview surface abandoned!");                      \
+            mWindow = NULL;                                          \
+        }                                                            \
+        return err;                                                  \
+    }
 
 namespace android {
 
@@ -68,6 +84,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mCaptureInProgress(false),
           mParameters(),
           mPreviewMemory(0),
+          mPreviewBuffers(0),
           mRawHeap(0),
           mRecordHeap(0),
           mJpegHeap(0),
@@ -393,26 +410,45 @@ CameraHardwareSec::~CameraHardwareSec()
     release();
 }
 
-sp<IMemoryHeap> CameraHardwareSec::getRawHeap() const
-{
-    return mRawHeap;
-}
-
+// here I don't know what I am doing, so now debugging
 status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
     Mutex::Autolock lock(mPreviewLock);
+
+    status_t    err;
+    int         width, height, frame_size;
 
     LOGI("%s :", __func__);
 
     mWindow = window;
     if(!window) {
         LOGI("NULL ANativeWindow passed to setPreviewWindow");
-        goto end;
+        return NO_ERROR;
     }
 
-    mWindow->set_buffer_count(mWindow, kBufferCount);
+    err = mWindow->set_buffer_count(mWindow, kBufferCount);
+    CHECK_WINDOW_INIT(err);
 
-end:
+    // Set window geometry
+    mSecCamera->getPreviewSize(&width, &height, &frame_size);
+    err = mWindow->set_buffers_geometry(mWindow, width, height,
+            /*toOMXPixFormat(format)*/HAL_PIXEL_FORMAT_NV12);  // Gralloc only supports NV12 alloc!
+    CHECK_WINDOW_INIT(err);
+
+    mPreviewBuffers = new buffer_handle_t*[kBufferCount];
+    for (int i=0;i<kBufferCount;i++) {
+        buffer_handle_t* handle;
+        int stride;  // dummy variable to get stride
+
+        err = mWindow->dequeue_buffer(mWindow, &handle, &stride);
+        CHECK_WINDOW_INIT(err);
+
+        mPreviewBuffers[i] = handle;
+
+        err = mWindow->cancel_buffer(mWindow, handle);
+        CHECK_WINDOW_INIT(err);
+    }
+
     return NO_ERROR;
 }
 
@@ -557,7 +593,19 @@ int CameraHardwareSec::previewThread()
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
         mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewMemory, index, NULL, mCallbackCookie);
     } else {
-        // here we should work with mWindow
+        int err, stride;
+        buffer_handle_t* buf;
+
+        err = mWindow->dequeue_buffer(mWindow, &buf, &stride);
+        CHECK_WINDOW_INIT(err);
+
+        err = mWindow->lock_buffer(mWindow, buf);
+        CHECK_WINDOW_INIT(err);
+
+        err = mWindow->enqueue_buffer(mWindow, buf);
+        if (err != 0) {
+            LOGE("Surface::queueBuffer returned error %d", err);
+        }
     }
 
     /*

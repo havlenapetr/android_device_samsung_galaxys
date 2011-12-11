@@ -34,8 +34,6 @@ public:
     CameraHardwareSec(int cameraId);
     ~CameraHardwareSec();
 
-    sp<IMemoryHeap> getRawHeap() const;
-
     void        setCallbacks(camera_notify_callback notify_cb,
                              camera_data_callback data_cb,
                              camera_data_timestamp_callback data_cb_timestamp,
@@ -180,6 +178,7 @@ private:
     CameraParameters    mInternalParameters;
 
     camera_memory_t*    mPreviewMemory;
+    buffer_handle_t**   mPreviewBuffers;
     sp<MemoryHeapBase>  mRawHeap;
     sp<MemoryHeapBase>  mRecordHeap;
     sp<MemoryHeapBase>  mJpegHeap;
