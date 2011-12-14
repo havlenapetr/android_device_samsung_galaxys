@@ -24,6 +24,7 @@
 #include <sys/poll.h>
 
 #include "SecTv.h"
+#include "fimd_api.h"
 
 using namespace android;
 
@@ -455,11 +456,6 @@ int SecTv::openTvOut(SecTv** hardware)
     LOGV("binded to output: %i", TV_DEV_INDEX);
     *hardware = new SecTv(fd, TV_DEV_INDEX);
 
-    ret = (*hardware)->setStandart(S5P_TV_STD_NTSC_M);
-    RETURN_IF(ret);
-    ret = (*hardware)->setOutput(S5P_TV_OUTPUT_TYPE_COMPOSITE);
-    RETURN_IF(ret);
-
     return 0;
 }
 
@@ -471,9 +467,9 @@ SecTv::SecTv(int fd, int index)
       mFormat(-1),
       mRunning(false),
       mAudioEnabled(false),
-      mRawHeap(NULL),
       mTvOutVFd(-1),
-      mDefaultFBFd(-1)
+      mFrameBuffFd(-1),
+      mImageMemory(NULL)
 {
     mParams = (struct v4l2_window_s5p_tvout*)&mStreamParams.parm.raw_data;
     memset(mParams, 0, sizeof(struct v4l2_window_s5p_tvout));
@@ -482,23 +478,40 @@ SecTv::SecTv(int fd, int index)
 
 SecTv::~SecTv()
 {
-    if (mDefaultFBFd > 0) {
-        close(mDefaultFBFd);
+    if (mFrameBuffFd > 0) {
+        fb_close(mFrameBuffFd);
     }
     if(mTvOutFd > 0) {
         close(mTvOutFd);
     }
-    if (mRawHeap != NULL) {
-        mRawHeap.clear();
+    if (mImageMemory != NULL) {
+        free(mImageMemory);
     }
 }
 
-int SecTv::init()
+int SecTv::init(int fbIndex, int format)
 {
-    if(mDefaultFBFd <= 0) {
-        mDefaultFBFd = open(DEFAULT_FB, O_RDWR);
-        RETURN_IF(mDefaultFBFd);
-    }
+    int ret;
+    struct fb_var_screeninfo fb_info;
+
+    //ret = (*hardware)->setStandart(S5P_TV_STD_NTSC_M);
+    ret = setStandart(S5P_TV_STD_PAL_BDGHI);
+    RETURN_IF(ret);
+    ret = setOutput(S5P_TV_OUTPUT_TYPE_COMPOSITE);
+    RETURN_IF(ret);
+
+    mFrameBuffFd = fb_open(fbIndex);
+    RETURN_IF(mFrameBuffFd);
+
+    ret = get_vscreeninfo(mFrameBuffFd, &fb_info);
+    RETURN_IF(ret);
+
+    ret = setFormat(fb_info.xres, fb_info.yres, format);
+    RETURN_IF(ret);
+
+    ret = setWindow(fb_info.xoffset, fb_info.yoffset, fb_info.xres, fb_info.yres);
+    RETURN_IF(ret);
+
     return 0;
 }
 
@@ -593,7 +606,10 @@ int SecTv::setCrop(int offset_x, int offset_y, int width, int height)
 
 int SecTv::setFormat(int width, int height, int format)
 {
-    LOGV("%s", __func__);
+    int bpp = get_pixel_depth(format);
+
+    LOGV("%s - width(%i), height(%i), format(%i), bpp(%i)", __func__,
+         width, height, format, bpp);
     if(mWidth == width && mHeight == height && mFormat == format) {
         LOGV("%s: Nothing changed", __func__);
         return 0;
@@ -602,15 +618,16 @@ int SecTv::setFormat(int width, int height, int format)
     /* enum_fmt, s_fmt sample */
     int ret = tv20_v4l2_enum_fmt(mTvOutFd, format);
     RETURN_IF(ret);
-    
-    if (mRawHeap != NULL) {
-        mRawHeap.clear();
+
+    mImageMemory = fb_init_display(mFrameBuffFd, width, height, 0, 0, bpp);
+    if (mImageMemory == NULL) {
+        LOGE("Can't init framebuffer(%i)", mFrameBuffFd);
+        return -1;
     }
-    int size = calcFrameSize(width, height, format);
-    mRawHeap = new MemoryHeapBase(size);
+
     ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format,
-                          (unsigned int)mRawHeap->base(),
-                          (unsigned int)mRawHeap->base() + 4);
+                          (unsigned int)&mImageMemory,
+                          (unsigned int)&mImageMemory + 4);
     RETURN_IF(ret);
 
     mWidth = width;
@@ -678,9 +695,9 @@ bool SecTv::isMuted()
 int SecTv::enable(bool shouldEnableAudio)
 {
     LOGV("%s", __func__);
-    RETURN_IF(mTvOutVFd);
+    RETURN_IF(mTvOutFd);
 
-    int ret = tv20_v4l2_start_overlay(mTvOutVFd);
+    int ret = tv20_v4l2_streamon(mTvOutFd);
     RETURN_IF(ret);
 
     mRunning = true;
@@ -695,10 +712,16 @@ int SecTv::enable(bool shouldEnableAudio)
 
 int SecTv::disable()
 {
-    LOGV("%s", __func__);
-    RETURN_IF(mTvOutVFd);
+    int ret;
 
-    int ret = tv20_v4l2_stop_overlay(mTvOutVFd);
+    LOGV("%s", __func__);
+    RETURN_IF(mTvOutFd);
+
+    if (!mRunning) {
+        return 0;
+    }
+
+    ret = tv20_v4l2_streamoff(mTvOutFd);
     RETURN_IF(ret);
 
     mRunning = false;

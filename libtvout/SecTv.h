@@ -34,8 +34,6 @@
 #include <linux/videodev2.h>
 #include <videodev2_samsung.h>
 
-#include <binder/MemoryHeapBase.h>
-
 namespace android {
 
 #define TV_DEV_NAME         "/dev/video14"
@@ -147,6 +145,8 @@ public:
 
     const __u8*     getName();
 
+    int             init(int fbIndex, int format);
+
     int             setStandart(s5p_tv_standart standart);
     int             setOutput(s5p_tv_output output);
 
@@ -168,8 +168,8 @@ private:
     SecTv(int fd, int index);
 
     int             mTvOutFd;
+    int             mFrameBuffFd;
     int             mTvOutVFd;
-    int             mDefaultFBFd;
     int             mIndex;
     
     int             mWidth;
@@ -179,9 +179,8 @@ private:
     bool            mRunning;
     bool            mAudioEnabled;
 
-    sp<MemoryHeapBase>  mRawHeap;
+    char*           mImageMemory;
 
-    int             init();
     int             initLayer();
     void            deinitLayer();
     int             enableAudio();

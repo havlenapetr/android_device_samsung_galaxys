@@ -14,6 +14,9 @@
 * limitations under the License.
 */
 
+//#define LOG_NDEBUG 0
+#define LOG_TAG "fimd_api"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -168,7 +171,7 @@ char *fb_init_display(int fp, int width, int height, int left_x, int top_y,
 {
 	struct fb_var_screeninfo var;
 	struct s5ptvfb_user_window window;
-	int fb_size;
+	int fb_size, ret;
 	char *fb = NULL;
 
 	var.xres = width;
@@ -188,11 +191,22 @@ char *fb_init_display(int fp, int width, int height, int left_x, int top_y,
 	fb_size = var.xres_virtual * var.yres_virtual * bpp / 8;
 
 	/* FBIOPUT_VSCREENINFO should be first */
-	put_vscreeninfo(fp, &var);
-	fb_ioctl(fp, S5PTVFB_WIN_POSITION, &window);
+	ret = put_vscreeninfo(fp, &var);
+    if (ret < 0) {
+        return NULL;
+    }
+
+	ret = fb_ioctl(fp, S5PTVFB_WIN_POSITION, &window);
+    if (ret < 0) {
+        return NULL;
+    }
 
 	/* draw image */
 	fb = fb_mmap(fb_size, fp);
+    if (fb == NULL) {
+        return NULL;
+    }
+
 	memset(fb, 0x0, fb_size);
 
 	return fb;

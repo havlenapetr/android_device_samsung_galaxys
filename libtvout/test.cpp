@@ -26,6 +26,8 @@
 #define WIDTH   800
 #define HEIGHT  480
 
+#define FRAMEBUFFER_INDEX   1
+
 using namespace android;
 
 static bool killed;
@@ -58,10 +60,10 @@ int main(int argc, char** argv) {
     int ret = SecTv::openTvOut(&hardware);
     CHECK(ret);
 
-    //ret = hardware->init(V4L2_PIX_FMT_NV12);
-    //CHECK(ret);
+    ret = hardware->init(FRAMEBUFFER_INDEX, V4L2_PIX_FMT_NV12);
+    CHECK(ret);
 
-    printf("setting format\n");
+    /*printf("setting format\n");
     ret = hardware->setFormat(WIDTH, HEIGHT, V4L2_PIX_FMT_NV12);
     CHECK(ret);
 
@@ -71,7 +73,7 @@ int main(int argc, char** argv) {
 
     printf("setting crop window\n");
     ret = hardware->setCrop(0, 0, WIDTH, HEIGHT);
-    CHECK(ret);
+    CHECK(ret);*/
 
     printf("enabling\n");
     ret = hardware->enable();
@@ -84,7 +86,7 @@ int main(int argc, char** argv) {
 end:
     printf("disabling\n");
     ret = hardware->disable();
-    CHECK(ret);
+    //CHECK(ret);
 
     printf("deinitzializing tvout hardware\n");
     if(hardware != NULL)
