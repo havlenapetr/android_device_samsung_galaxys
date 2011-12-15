@@ -606,6 +606,8 @@ int SecTv::setCrop(int offset_x, int offset_y, int width, int height)
 
 int SecTv::setFormat(int width, int height, int format)
 {
+    struct fb_fix_screeninfo fix;
+
     int bpp = get_pixel_depth(format);
 
     LOGV("%s - width(%i), height(%i), format(%i), bpp(%i)", __func__,
@@ -619,15 +621,17 @@ int SecTv::setFormat(int width, int height, int format)
     int ret = tv20_v4l2_enum_fmt(mTvOutFd, format);
     RETURN_IF(ret);
 
-    mImageMemory = fb_init_display(mFrameBuffFd, width, height, 0, 0, bpp);
+    /*mImageMemory = fb_init_display(mFrameBuffFd, width, height, 0, 0, bpp);
     if (mImageMemory == NULL) {
         LOGE("Can't init framebuffer(%i)", mFrameBuffFd);
         return -1;
-    }
+    }*/
+    ret = get_fscreeninfo(mFrameBuffFd, &fix);
+    RETURN_IF(ret);
 
     ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format,
-                          (unsigned int)&mImageMemory,
-                          (unsigned int)&mImageMemory + 4);
+                          (unsigned int)fix.smem_start,
+                          (unsigned int)fix.smem_start + 4);
     RETURN_IF(ret);
 
     mWidth = width;
