@@ -36,6 +36,11 @@
 #include <ui/egl/android_natives.h>
 #include <ui/GraphicBufferMapper.h>
 
+#define CAMHAL_GRALLOC_USAGE GRALLOC_USAGE_HW_TEXTURE | \
+                             GRALLOC_USAGE_HW_RENDER | \
+                             GRALLOC_USAGE_SW_READ_RARELY | \
+                             GRALLOC_USAGE_SW_WRITE_NEVER
+
 #define HAL_PIXEL_FORMAT_NV12           0x100
 
 #define VIDEO_COMMENT_MARKER_H          0xFFBE
@@ -420,41 +425,52 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 
     LOGI("%s :", __func__);
 
-    mWindow = window;
     if(!window) {
         LOGI("NULL ANativeWindow passed to setPreviewWindow");
         return NO_ERROR;
     }
 
-    err = mWindow->set_buffer_count(mWindow, kBufferCount);
+    LOGI("1");
+    err = window->set_usage(window, CAMHAL_GRALLOC_USAGE);
+    CHECK_WINDOW_INIT(err);
+    
+    LOGI("11");
+    err = window->set_buffer_count(window, kBufferCount);
     CHECK_WINDOW_INIT(err);
 
+    LOGI("2");
     // Set window geometry
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    err = mWindow->set_buffers_geometry(mWindow, width, height,
+    err = window->set_buffers_geometry(window, width, height,
             /*toOMXPixFormat(format)*/HAL_PIXEL_FORMAT_NV12);  // Gralloc only supports NV12 alloc!
     CHECK_WINDOW_INIT(err);
 
+    LOGI("3");
     mPreviewBuffers = new buffer_handle_t*[kBufferCount];
     for (int i=0;i<kBufferCount;i++) {
         buffer_handle_t* handle;
         int stride;  // dummy variable to get stride
 
-        err = mWindow->dequeue_buffer(mWindow, &handle, &stride);
+        LOGI("4");
+        err = window->dequeue_buffer(window, &handle, &stride);
         CHECK_WINDOW_INIT(err);
 
         mPreviewBuffers[i] = handle;
 
-        err = mWindow->cancel_buffer(mWindow, handle);
+        LOGI("5");
+        err = window->cancel_buffer(window, handle);
         CHECK_WINDOW_INIT(err);
     }
+    
+    mWindow = window;
 
     return NO_ERROR;
 }
 
 status_t CameraHardwareSec::storeMetaDataInBuffers(bool enable)
 {
-    return NO_ERROR;
+    // we don't support storing the meta data in the video buffers
+    return INVALID_OPERATION;
 }
 
 void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
