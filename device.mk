@@ -48,13 +48,20 @@ PRODUCT_COPY_FILES := \
 
 # Init files
 PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
     device/samsung/galaxys/init.aries.usb.rc:root/init.aries.usb.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc \
     device/samsung/galaxys/lpm.rc:root/lpm.rc \
     device/samsung/galaxys/fota.rc:root/fota.rc \
     device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
+
+ifeq ($(DEVICE_BOOTS_FROM_SDCARD),true)
+PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/sdboot.init.aries.rc:root/init.aries.rc
+else
+PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/init.aries.rc:root/init.aries.rc
+endif
 
 # Recovery images and keys
 PRODUCT_COPY_FILES += \
@@ -105,6 +112,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     lights.aries \
     overlay.aries \
+    hwcomposer.aries \
     sensors.aries \
     audio.primary.aries \
     audio_policy.aries \
