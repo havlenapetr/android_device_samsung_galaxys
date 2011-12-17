@@ -40,6 +40,7 @@ int fb_open(int win)
 	char node[20];
 	int fp = -1;
 
+    memset(&node, 0, 20);
 	sprintf(node, "%s%d", PFX_NODE_FB, win);
 
 	fp = open(node, O_RDWR);

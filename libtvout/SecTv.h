@@ -32,7 +32,8 @@
 #include <sys/stat.h>
 
 #include <linux/videodev2.h>
-#include <videodev2_samsung.h>
+
+#include "s5p_fimc.h"
 
 namespace android {
 
@@ -86,6 +87,10 @@ namespace android {
 #define V4L2_STD_1080I_59	((v4l2_std_id)0x10000000)
 #define V4L2_STD_1080P_59	((v4l2_std_id)0x11000000)
 #define V4L2_STD_1080P_30	((v4l2_std_id)0x12000000)
+
+#define VIDIOC_HDCP_ENABLE _IOWR('V', 100, unsigned int)        //Control HDCP flag 1: enable, 0: disable
+#define VIDIOC_HDCP_STATUS _IOR('V', 101, unsigned int)
+#define VIDIOC_HDCP_PROT_STATUS _IOR('V', 102, unsigned int)
 
 #define FORMAT_FLAGS_DITHER		0x01
 #define FORMAT_FLAGS_PACKED		0x02
@@ -145,7 +150,7 @@ public:
 
     const __u8*     getName();
 
-    int             init(int fbIndex, int format);
+//    int             init(int fbIndex, int format);
 
     int             setStandart(s5p_tv_standart standart);
     int             setOutput(s5p_tv_output output);
@@ -161,6 +166,8 @@ public:
     bool            isEnabled() { return mRunning; };
     bool            isAudioEnabled() { return mAudioEnabled; };
 
+    int             draw(unsigned int addr, unsigned int size);
+
     // open hardware via this method
     static int      openTvOut(SecTv** hardware);
 
@@ -171,6 +178,7 @@ private:
     int             mFrameBuffFd;
     int             mTvOutVFd;
     int             mIndex;
+    unsigned int    mHdcpEnabled;
     
     int             mWidth;
     int             mHeight;
@@ -181,11 +189,14 @@ private:
 
     char*           mImageMemory;
 
-    int             initLayer();
-    void            deinitLayer();
+//    int             initLayer();
+//    void            deinitLayer();
     int             enableAudio();
     int             disableAudio();
+    unsigned int    getPhyAddrY(int index);
+    unsigned int    getPhyAddrC(int index);
 
+    s5p_fimc_t      mFimcHandle;
     v4l2_streamparm mStreamParams;
     struct v4l2_crop mCropWin;
     struct v4l2_window_s5p_tvout* mParams;

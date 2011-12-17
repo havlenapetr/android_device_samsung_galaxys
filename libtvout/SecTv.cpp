@@ -24,7 +24,6 @@
 #include <sys/poll.h>
 
 #include "SecTv.h"
-#include "fimd_api.h"
 
 using namespace android;
 
@@ -43,6 +42,8 @@ using namespace android;
 
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
+
+#define MAX_OUTBUFS		3
 
 #define ALIGN_TO_32B(x)   ((((x) + (1 <<  5) - 1) >>  5) <<  5)
 #define ALIGN_TO_128B(x)  ((((x) + (1 <<  7) - 1) >>  7) <<  7)
@@ -469,26 +470,35 @@ SecTv::SecTv(int fd, int index)
       mAudioEnabled(false),
       mTvOutVFd(-1),
       mFrameBuffFd(-1),
-      mImageMemory(NULL)
+      mImageMemory(NULL),
+      mHdcpEnabled(0)
 {
     mParams = (struct v4l2_window_s5p_tvout*)&mStreamParams.parm.raw_data;
     memset(mParams, 0, sizeof(struct v4l2_window_s5p_tvout));
     memset(&mCropWin, 0, sizeof(struct v4l2_crop));
+
+    int ret = ioctl(mTvOutFd, VIDIOC_HDCP_ENABLE, &mHdcpEnabled);
+    LOG_IF(ret);
+
+    memset(&mFimcHandle, 0, sizeof(s5p_fimc_t));
+    ret = fimc_open(&mFimcHandle);
+    LOG_IF(ret);
 }
 
 SecTv::~SecTv()
 {
-    if (mFrameBuffFd > 0) {
-        fb_close(mFrameBuffFd);
-    }
-    if(mTvOutFd > 0) {
+    if(mTvOutFd) {
         close(mTvOutFd);
     }
-    if (mImageMemory != NULL) {
+    if(mFimcHandle.dev_fd) {
+        fimc_close(&mFimcHandle);
+    }
+    if (mImageMemory) {
         free(mImageMemory);
     }
 }
 
+/*
 int SecTv::init(int fbIndex, int format)
 {
     int ret;
@@ -537,6 +547,7 @@ void SecTv::deinitLayer()
     close(mTvOutVFd);
     mTvOutVFd = -1;
 }
+*/
 
 int SecTv::setStandart(s5p_tv_standart standart)
 {
@@ -606,9 +617,13 @@ int SecTv::setCrop(int offset_x, int offset_y, int width, int height)
 
 int SecTv::setFormat(int width, int height, int format)
 {
-    struct fb_fix_screeninfo fix;
+    int ret, bpp, y_size;
+    unsigned int addr;
+   
+    LOGV("%s", __func__);
+    RETURN_IF(mTvOutFd);
 
-    int bpp = get_pixel_depth(format);
+    bpp = get_pixel_depth(format);
 
     LOGV("%s - width(%i), height(%i), format(%i), bpp(%i)", __func__,
          width, height, format, bpp);
@@ -618,21 +633,20 @@ int SecTv::setFormat(int width, int height, int format)
     }
 
     /* enum_fmt, s_fmt sample */
-    int ret = tv20_v4l2_enum_fmt(mTvOutFd, format);
+    ret = tv20_v4l2_enum_fmt(mTvOutFd, format);
     RETURN_IF(ret);
 
-    /*mImageMemory = fb_init_display(mFrameBuffFd, width, height, 0, 0, bpp);
-    if (mImageMemory == NULL) {
-        LOGE("Can't init framebuffer(%i)", mFrameBuffFd);
-        return -1;
-    }*/
-    ret = get_fscreeninfo(mFrameBuffFd, &fix);
+    addr = (unsigned int)mFimcHandle.out_buf.phys_addr;
+    y_size = ALIGN_TO_8KB(ALIGN_TO_128B(width) * ALIGN_TO_32B(height));
+    ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format, 
+                          (unsigned int) addr,
+                          (unsigned int) addr + y_size);
     RETURN_IF(ret);
 
-    ret = tv20_v4l2_s_fmt(mTvOutFd, width, height, format,
-                          (unsigned int)fix.smem_start,
-                          (unsigned int)fix.smem_start + 4);
-    RETURN_IF(ret);
+    fimc_set_src_img_param(&mFimcHandle, width, height,
+                           (void *) addr,
+                           (void *) (addr + y_size),
+                           0);
 
     mWidth = width;
     mHeight = height;
@@ -696,21 +710,78 @@ bool SecTv::isMuted()
     return tv20_v4l2_audio_get_mute_state(mTvOutFd) > 0;
 }
 
+int SecTv::draw(unsigned int addr, unsigned int size)
+{
+    int ret;
+    s5p_fimc_params_t* params;
+    struct fimc_buf fimc_src_buf;
+
+    params = &(mFimcHandle.params);
+    fimc_src_buf.base[0] = params->src.buf_addr_phy_rgb_y;
+    fimc_src_buf.base[1] = params->src.buf_addr_phy_cb;
+    fimc_src_buf.base[2] = params->src.buf_addr_phy_cr;
+
+    // test cpy to tvout
+    /*char pixels[100];
+    memset(&pixels, 0xF8, 100);
+    memcpy(mFimcHandle.out_buf.phys_addr, &pixels, 100);*/
+
+    ret = fimc_queue(mFimcHandle.dev_fd, &fimc_src_buf);
+    RETURN_IF(ret);
+
+    ret = fimc_dequeue(mFimcHandle.dev_fd);
+    RETURN_IF(ret);
+
+    return 0;
+}
+
 int SecTv::enable(bool shouldEnableAudio)
 {
+    //struct fimc_buf fimc_src_buf;
+
     LOGV("%s", __func__);
     RETURN_IF(mTvOutFd);
 
     int ret = tv20_v4l2_streamon(mTvOutFd);
     RETURN_IF(ret);
 
-    mRunning = true;
-
     if(shouldEnableAudio) {
         LOGV("%s: enabling audio too", __func__);
         ret = enableAudio();
         RETURN_IF(ret);
     }
+
+    s5p_fimc_params_t* params = &(mFimcHandle.params);
+    ret = fimc_set_src(mFimcHandle.dev_fd, mFimcHandle.hw_ver, &params->src);
+    RETURN_IF(ret);
+    
+    ret = fimc_set_dst(mFimcHandle.dev_fd, &params->dst, 0,
+                       (unsigned int) mFimcHandle.out_buf.phys_addr);
+    RETURN_IF(ret);
+
+    ret = fimc_stream_on(mFimcHandle.dev_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT);
+    RETURN_IF(ret);
+
+    /*
+    fimc_src_buf.base[0] = params->src.buf_addr_phy_rgb_y;
+	fimc_src_buf.base[1] = params->src.buf_addr_phy_cb;
+	fimc_src_buf.base[2] = params->src.buf_addr_phy_cr;
+
+	ret = fimc_stream_on(mFimcHandle.dev_fd, V4L2_BUF_TYPE_VIDEO_OUTPUT);
+    RETURN_IF(ret);
+
+	fimc_queue(mFimcHandle.dev_fd, &fimc_src_buf);
+    RETURN_IF(ret);
+
+	fimc_dequeue(mFimcHandle.dev_fd);
+    RETURN_IF(ret);
+
+	fimc_stream_off(mFimcHandle.dev_fd);
+    RETURN_IF(ret);
+    */
+
+    mRunning = true;
+
     return 0;
 }
 
@@ -724,16 +795,23 @@ int SecTv::disable()
     if (!mRunning) {
         return 0;
     }
+    
+    ret = fimc_clr_buf(mFimcHandle.dev_fd);
+    RETURN_IF(ret);
+
+    ret = fimc_stream_off(mFimcHandle.dev_fd);
+    RETURN_IF(ret);
 
     ret = tv20_v4l2_streamoff(mTvOutFd);
     RETURN_IF(ret);
-
-    mRunning = false;
 
     if(mAudioEnabled) {
         LOGV("%s: disabling audio too", __func__);
         ret = disableAudio();
         RETURN_IF(ret);
     }
+
+    mRunning = false;
+
     return 0;
 }

@@ -15,6 +15,8 @@
  */
 
 #include "SecTv.h"
+#include "fimd_api.h"
+#include "s3cfb.h"
 
 #define CHECK(return_value)                                          \
     if (return_value < 0) {                                          \
@@ -51,40 +53,85 @@ static void tvout_init(SecTv** hardware) {
     sigaction(SIGKILL, &act, NULL);
 }
 
-int main(int argc, char** argv) {
-    SecTv* hardware;
+static void
+print_fbs(int max)
+{
+    int ret, fb;
+    struct fb_var_screeninfo fb_info;
 
+    for(int i=0;i<max;i++) {
+        fb = fb_open(i);
+        if(fb > 0) {
+            ret = get_vscreeninfo(fb, &fb_info);
+            if(ret == 0) {
+                printf("fb(%i): x(%i) y(%i) active(%i)\n", i, fb_info.xres,
+                    fb_info.yres, fb_info.activate);
+            }
+            fb_close(i);
+        } else {
+            printf("can't open fb(%i)\n", i);
+        }
+    }
+}
+
+int main(int argc, char** argv) {
+    int ret, fb;
+    SecTv* hardware;
+    struct s3cfb_next_info s3c_fb_info;
+    struct fb_var_screeninfo fb_info;
+
+    fb = 0;
     tvout_init(&hardware);
 
+    //print_fbs(2);
+
     printf("initzializing tvout hardware\n");
-    int ret = SecTv::openTvOut(&hardware);
+    ret = SecTv::openTvOut(&hardware);
     CHECK(ret);
 
-    ret = hardware->init(FRAMEBUFFER_INDEX, V4L2_PIX_FMT_NV12);
+    ret = hardware->setStandart(S5P_TV_STD_PAL_BDGHI);
     CHECK(ret);
 
-    /*printf("setting format\n");
-    ret = hardware->setFormat(WIDTH, HEIGHT, V4L2_PIX_FMT_NV12);
+    ret = hardware->setOutput(S5P_TV_OUTPUT_TYPE_COMPOSITE);
     CHECK(ret);
 
-    printf("setting src window\n");
-    ret = hardware->setWindow(0, 0, WIDTH, HEIGHT);
+    fb = fb_open(0);
+    CHECK(fb);
+
+    ret = get_vscreeninfo(fb, &fb_info);
     CHECK(ret);
 
-    printf("setting crop window\n");
-    ret = hardware->setCrop(0, 0, WIDTH, HEIGHT);
-    CHECK(ret);*/
+    /* get physical framebuffer address for LCD */
+    if (ioctl(fb, S3CFB_GET_CURR_FB_INFO, &s3c_fb_info) == -1) {
+        printf("%s:ioctl(S3CFB_GET_LCD_ADDR) fail\n", __func__);
+        goto end;
+    }
+
+    ret = hardware->setFormat(fb_info.xres,
+                              fb_info.yres,
+                              V4L2_PIX_FMT_NV12);
+    CHECK(ret);
+
+    ret = hardware->setWindow(fb_info.xoffset, fb_info.yoffset, fb_info.xres, fb_info.yres);
+    CHECK(ret);
 
     printf("enabling\n");
     ret = hardware->enable();
     CHECK(ret);
 
     while(!killed) {
+        ret = hardware->draw(0, 0);
+        CHECK(ret);
+
         usleep(50000);
     }
 
 end:
     printf("disabling\n");
+
+    if(fb)
+        fb_close(fb);
+
     ret = hardware->disable();
     //CHECK(ret);
 
