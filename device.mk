@@ -57,7 +57,7 @@ PRODUCT_COPY_FILES += \
 
 ifeq ($(DEVICE_BOOTS_FROM_SDCARD),true)
 PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/sdboot.init.aries.rc:root/init.aries.rc
+    device/samsung/galaxys/init.aries.sdboot.rc:root/init.aries.rc
 else
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.rc:root/init.aries.rc
