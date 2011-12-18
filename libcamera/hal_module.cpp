@@ -490,7 +490,7 @@ fail:
 
 int camera_get_number_of_cameras(void)
 {
-    return sizeof(gCameraInfo);
+    return sizeof(gCameraInfo)/sizeof(gCameraInfo[0]);
 }
 
 int camera_get_camera_info(int camera_id, struct camera_info *info)
