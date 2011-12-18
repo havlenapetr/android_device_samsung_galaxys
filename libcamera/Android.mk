@@ -16,7 +16,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_SHARED_LIBRARIES:= libutils libui liblog libbinder libcutils
 LOCAL_SHARED_LIBRARIES+= libs3cjpeg
-LOCAL_SHARED_LIBRARIES+= libcamera_client
+LOCAL_SHARED_LIBRARIES+= libhardware libcamera_client
 
 LOCAL_MODULE := camera.aries
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw

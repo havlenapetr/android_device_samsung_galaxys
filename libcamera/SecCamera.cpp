@@ -1637,7 +1637,7 @@ int SecCamera::getAutoFocusResult(void)
 {
     int af_result;
 
-    af_result = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_AUTO_FOCUS_RESULT);
+    af_result = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAMERA_AUTO_FOCUS_RESULT_FIRST);
 
     LOGV("%s : returning %d", __func__, af_result);
 

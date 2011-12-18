@@ -23,13 +23,15 @@
 #include "SecCameraParameters.h"
 
 #include <utils/threads.h>
+#include <utils/RefBase.h>
 #include <binder/MemoryBase.h>
 #include <binder/MemoryHeapBase.h>
 
 #include <hardware/camera.h>
+#include <hardware/gralloc.h>
 
 namespace android {
-class CameraHardwareSec {
+class CameraHardwareSec : public virtual RefBase {
 public:
     CameraHardwareSec(int cameraId);
     ~CameraHardwareSec();
@@ -48,10 +50,6 @@ public:
     status_t    storeMetaDataInBuffers(bool enable);
 
     status_t    startPreview();
-#if defined(BOARD_USES_OVERLAY)
-    bool        useOverlay();
-    status_t    setOverlay(const sp<Overlay> &overlay);
-#endif
     void        stopPreview();
     bool        previewEnabled();
 
@@ -178,10 +176,8 @@ private:
     CameraParameters    mInternalParameters;
 
     camera_memory_t*    mPreviewMemory;
-    buffer_handle_t**   mPreviewBuffers;
-    sp<MemoryHeapBase>  mRawHeap;
-    sp<MemoryHeapBase>  mRecordHeap;
-    sp<MemoryHeapBase>  mJpegHeap;
+    camera_memory_t*    mRawHeap;
+    camera_memory_t*    mRecordHeap;
 
     SecCamera           *mSecCamera;
     const __u8          *mCameraSensorName;
@@ -189,18 +185,12 @@ private:
     mutable Mutex       mSkipFrameLock;
     int                 mSkipFrame;
 
-#if defined(BOARD_USES_OVERLAY)
-    sp<Overlay>         mOverlay;
-    bool                mUseOverlay;
-    int                 mOverlayBufferIdx;
-#endif
-
     preview_stream_ops* mWindow;
 
     camera_notify_callback mNotifyCb;
     camera_data_callback mDataCb;
     camera_data_timestamp_callback mDataCbTimestamp;
-    camera_request_memory mMemoryCbRequest;
+    camera_request_memory mGetMemoryCb;
     void                *mCallbackCookie;
 
     int32_t             mMsgEnabled;
@@ -212,6 +202,8 @@ private:
     int                 mPostViewSize;
 
     Vector<Size>        mSupportedPreviewSizes;
+
+    static gralloc_module_t const* mGrallocHal;
 };
 
 }; // namespace android
