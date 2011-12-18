@@ -144,8 +144,9 @@ namespace android {
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))
 
-#define MAX_BUFFERS_HD  5
-#define MAX_BUFFERS     11
+#define MAX_BUFFERS_HD  4
+//#define MAX_BUFFERS     11
+#define MAX_BUFFERS     MAX_BUFFERS_HD
 
 /*
  * V 4 L 2   F I M C   E X T E N S I O N S
