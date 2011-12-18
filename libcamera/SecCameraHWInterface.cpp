@@ -32,13 +32,19 @@
 #define VIDEO_COMMENT_MARKER_L          0xFFBF
 #define VIDEO_COMMENT_MARKER_LENGTH     4
 #define JPEG_EOI_MARKER                 0xFFD9
-#define HIBYTE(x) (((x) >> 8) & 0xFF)
-#define LOBYTE(x) ((x) & 0xFF)
+#define HIBYTE(x)                       (((x) >> 8) & 0xFF)
+#define LOBYTE(x)                       ((x) & 0xFF)
 
 #define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
 #define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
 #define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.20,0.25,Infinity"
+
+#define RELEASE_MEMORY_BUFFER(buffer)                                \
+    if (buffer) {                                                    \
+        buffer->release(buffer);                                     \
+        buffer = NULL;                                               \
+    }
 
 namespace android {
 
@@ -170,19 +176,23 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     mSecCamera->getSnapshotMaxSize(&snapshot_max_width,
                                    &snapshot_max_height);
 
-    p.setPreviewFormat(SecCameraParameters::PIXEL_FORMAT_YUV420SP);
-    p.setPreviewSize(preview_max_width, preview_max_height);
-
     p.setPictureFormat(SecCameraParameters::PIXEL_FORMAT_JPEG);
     p.setPictureSize(snapshot_max_width, snapshot_max_height);
     p.set(SecCameraParameters::KEY_JPEG_QUALITY, "100"); // maximum quality
 
+    String8 previewColorString;
+    previewColorString = CameraParameters::PIXEL_FORMAT_YUV420SP;
+    previewColorString.append(",");
+    previewColorString.append(CameraParameters::PIXEL_FORMAT_YUV420P);
+
+    p.setPreviewFormat(SecCameraParameters::PIXEL_FORMAT_YUV420SP);
     p.set(SecCameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS,
-          SecCameraParameters::PIXEL_FORMAT_YUV420SP);
+          previewColorString.string());
     p.set(SecCameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
           SecCameraParameters::PIXEL_FORMAT_JPEG);
     p.set(SecCameraParameters::KEY_VIDEO_FRAME_FORMAT,
           SecCameraParameters::PIXEL_FORMAT_YUV420SP);
+    p.setPreviewSize(preview_max_width, preview_max_height);
 
     String8 parameterString;
 
@@ -421,7 +431,7 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
     int hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
     
     const char *str_preview_format = mParameters.getPreviewFormat();
-    LOGV("%s: preview format %s", __func__, str_preview_format);
+    LOGI("%s: preview format %s", __func__, str_preview_format);
     
     if (window->set_usage(window, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
         LOGE("%s: could not set usage on gralloc buffer", __func__);
@@ -681,18 +691,14 @@ status_t CameraHardwareSec::startPreview()
         return UNKNOWN_ERROR;
     }
 
-    if(mPreviewMemory) {
-        mPreviewMemory->release(mPreviewMemory);
-    }
-
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    previewHeapSize = (frame_size + 16) * kBufferCount;
 
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
-            mSecCamera->getCameraFd(), (size_t)(previewHeapSize), width, height);
+            mSecCamera->getCameraFd(), frame_size, width, height);
 
+    RELEASE_MEMORY_BUFFER(mPreviewMemory);
     mPreviewMemory = mGetMemoryCb(mSecCamera->getCameraFd(),
-                                    (size_t)previewHeapSize,
+                                    frame_size,
                                     kBufferCount,
                                     mCallbackCookie);
     if (!mPreviewMemory) {
@@ -743,10 +749,8 @@ status_t CameraHardwareSec::startRecording()
 
     Mutex::Autolock lock(mRecordLock);
 
-    if (mRecordHeap) {
-        mRecordHeap->release(mRecordHeap);
-        mRecordHeap = 0;
-    }
+    RELEASE_MEMORY_BUFFER(mRecordHeap);
+
     mRecordHeap = mGetMemoryCb(-1, sizeof(struct addrs), kBufferCount, NULL);
     if (!mRecordHeap) {
         LOGE("ERR(%s): Record heap creation fail", __func__);
@@ -1117,7 +1121,8 @@ int CameraHardwareSec::pictureThread()
         }
 
         mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, 0, NULL, mCallbackCookie);
-        jpegMem->release(jpegMem);
+
+        RELEASE_MEMORY_BUFFER(jpegMem);
     }
 
 out:
@@ -1484,38 +1489,22 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         int new_preview_format = 0;
 
         if (!strcmp(new_str_preview_format,
-                    SecCameraParameters::PIXEL_FORMAT_RGB565))
-            new_preview_format = V4L2_PIX_FMT_RGB565;
-        else if (!strcmp(new_str_preview_format,
                          SecCameraParameters::PIXEL_FORMAT_YUV420SP))
-            new_preview_format = V4L2_PIX_FMT_NV21;
-        else if (!strcmp(new_str_preview_format, "yuv420sp_custom"))
-            new_preview_format = V4L2_PIX_FMT_NV12T;
-        else if (!strcmp(new_str_preview_format, "yuv420p"))
             new_preview_format = V4L2_PIX_FMT_YUV420;
-        else if (!strcmp(new_str_preview_format, "yuv422i"))
-            new_preview_format = V4L2_PIX_FMT_YUYV;
-        else if (!strcmp(new_str_preview_format, "yuv422p"))
-            new_preview_format = V4L2_PIX_FMT_YUV422P;
+        else if (!strcmp(new_str_preview_format,
+                         SecCameraParameters::PIXEL_FORMAT_YUV420P))
+            new_preview_format = V4L2_PIX_FMT_YUV420;
         else
-            new_preview_format = V4L2_PIX_FMT_NV21; //for 3rd party
+            new_preview_format = V4L2_PIX_FMT_YUV420; //for 3rd party
 
         if (mSecCamera->setPreviewSize(new_preview_width, new_preview_height, new_preview_format) < 0) {
             LOGE("ERR(%s):Fail on mSecCamera->setPreviewSize(width(%d), height(%d), format(%d))",
                     __func__, new_preview_width, new_preview_height, new_preview_format);
             ret = UNKNOWN_ERROR;
         } else {
-                mParameters.setPreviewSize(new_preview_width, new_preview_height);
-                mParameters.setPreviewFormat(new_str_preview_format);
+            mParameters.setPreviewSize(new_preview_width, new_preview_height);
+            mParameters.setPreviewFormat(new_str_preview_format);
         }
-#if defined(BOARD_USES_OVERLAY)
-        if (mUseOverlay == true && mOverlay != 0) {
-            if (mOverlay->setCrop(0, 0, new_preview_width, new_preview_height) != NO_ERROR)     {
-                LOGE("ERR(%s)::(mOverlay->setCrop(0, 0, %d, %d) fail",
-                        __func__, new_preview_width, new_preview_height);
-            }
-        }
-#endif
     } else {
         LOGE("%s: Invalid preview size(%dx%d)",
                 __func__, new_preview_width, new_preview_height);
@@ -2211,21 +2200,10 @@ void CameraHardwareSec::release()
         mPictureThread.clear();
         mPictureThread = NULL;
     }
-    if (mRawHeap != NULL) {
-        mRawHeap->release(mRawHeap);
-        mRawHeap = NULL;
-    }
 
-    if (mPreviewMemory != NULL) {
-        LOGI("%s: releasing preview memory", __func__);
-        mPreviewMemory->release(mPreviewMemory);
-        mPreviewMemory = NULL;
-    }
-
-    if (mRecordHeap != NULL) {
-        mRecordHeap->release(mRecordHeap);
-        mRecordHeap = NULL;
-    }
+    RELEASE_MEMORY_BUFFER(mRawHeap);
+    RELEASE_MEMORY_BUFFER(mPreviewMemory);
+    RELEASE_MEMORY_BUFFER(mRecordHeap);
 
     /* close after all the heaps are cleared since those
      * could have dup'd our file descriptor.
