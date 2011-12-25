@@ -670,7 +670,7 @@ recording:
 status_t CameraHardwareSec::startPreview()
 {
     int ret = 0;        //s1 [Apply factory standard]
-    int width, height, frame_size, previewHeapSize;
+    int width, height, frame_size;
 
     LOGI("%s :", __func__);
 
@@ -696,6 +696,7 @@ status_t CameraHardwareSec::startPreview()
     }
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
+    frame_size = (frame_size + 16) * kBufferCount;
 
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
             mSecCamera->getCameraFd(), frame_size, width, height);
