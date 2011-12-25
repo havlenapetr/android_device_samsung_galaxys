@@ -130,44 +130,24 @@ private:
             int         pictureThread();
             bool        mCaptureInProgress;
 
-            int         save_jpeg(unsigned char *real_jpeg, int jpeg_size);
-            void        save_postview(const char *fname, uint8_t *buf,
-                                        uint32_t size);
-            int         decodeInterleaveData(unsigned char *pInterleaveData,
-                                                int interleaveDataSize,
-                                                int yuvWidth,
-                                                int yuvHeight,
-                                                int *pJpegSize,
-                                                void *pJpegData,
-                                                void *pYuvData);
-            bool        YUY2toNV21(void *srcBuf, void *dstBuf, uint32_t srcWidth, uint32_t srcHeight);
             bool        scaleDownYuv422(char *srcBuf, uint32_t srcWidth,
                                         uint32_t srcHight, char *dstBuf,
                                         uint32_t dstWidth, uint32_t dstHight);
 
-            bool        CheckVideoStartMarker(unsigned char *pBuf);
-            bool        CheckEOIMarker(unsigned char *pBuf);
-            bool        FindEOIMarkerInJPEG(unsigned char *pBuf,
-                                            int dwBufSize, int *pnJPEGsize);
-            bool        SplitFrame(unsigned char *pFrame, int dwSize,
-                                   int dwJPEGLineLength, int dwVideoLineLength,
-                                   int dwVideoHeight, void *pJPEG,
-                                   int *pdwJPEGSize, void *pVideo,
-                                   int *pdwVideoSize);
             void        setSkipFrame(int frame);
             bool        isSupportedPreviewSize(const int width,
                                                const int height) const;
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
-            bool        mExitAutoFocusThread;
+    bool                mExitAutoFocusThread;
 
     /* used by preview thread to block until it's told to run */
     mutable Mutex       mPreviewLock;
     mutable Condition   mPreviewCondition;
     mutable Condition   mPreviewStoppedCondition;
-            bool        mPreviewRunning;
-            bool        mExitPreviewThread;
+    bool                mPreviewRunning;
+    bool                mExitPreviewThread;
 
     /* used to guard threading state */
     mutable Mutex       mStateLock;
