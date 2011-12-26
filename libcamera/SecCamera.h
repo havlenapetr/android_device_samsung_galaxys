@@ -148,6 +148,11 @@ namespace android {
 //#define MAX_BUFFERS     11
 #define MAX_BUFFERS     MAX_BUFFERS_HD
 
+#define FIRST_AF_SEARCH_COUNT   600
+#define AF_PROGRESS             0x05
+#define AF_SUCCESS              0x02
+#define AF_DELAY                10000
+
 /*
  * V 4 L 2   F I M C   E X T E N S I O N S
  *
