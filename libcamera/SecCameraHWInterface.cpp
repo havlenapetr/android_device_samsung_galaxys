@@ -28,13 +28,6 @@
 
 #include <media/stagefright/MetadataBufferType.h>
 
-#define VIDEO_COMMENT_MARKER_H          0xFFBE
-#define VIDEO_COMMENT_MARKER_L          0xFFBF
-#define VIDEO_COMMENT_MARKER_LENGTH     4
-#define JPEG_EOI_MARKER                 0xFFD9
-#define HIBYTE(x)                       (((x) >> 8) & 0xFF)
-#define LOBYTE(x)                       ((x) & 0xFF)
-
 #define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
 #define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
 #define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
@@ -564,7 +557,7 @@ int CameraHardwareSec::previewThread()
     }
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    offset = (frame_size + 16) * index;
+    offset = frame_size * index;
 
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
@@ -696,10 +689,9 @@ status_t CameraHardwareSec::startPreview()
     }
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    frame_size = (frame_size + 16) * kBufferCount;
 
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
-            mSecCamera->getCameraFd(), frame_size, width, height);
+            mSecCamera->getCameraFd(), frame_size * kBufferCount, width, height);
 
     RELEASE_MEMORY_BUFFER(mPreviewMemory);
     mPreviewMemory = mGetMemoryCb(mSecCamera->getCameraFd(),
