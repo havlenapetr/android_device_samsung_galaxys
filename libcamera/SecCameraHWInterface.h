@@ -116,8 +116,10 @@ private:
         }
     };
 
-            void        initDefaultParameters(int cameraId);
-            void        initHeapLocked();
+    void                initDefaultParameters(int cameraId);
+
+    status_t            startPreview_l();
+    void                stopPreview_l();
 
     sp<PreviewThread>   mPreviewThread;
             int         previewThread();
@@ -147,6 +149,7 @@ private:
     mutable Condition   mPreviewCondition;
     mutable Condition   mPreviewStoppedCondition;
     bool                mPreviewRunning;
+    bool                mPreviewStartDeferred;
     bool                mExitPreviewThread;
 
     /* used to guard threading state */

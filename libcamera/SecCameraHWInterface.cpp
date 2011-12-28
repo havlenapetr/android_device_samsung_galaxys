@@ -184,7 +184,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     p.set(SecCameraParameters::KEY_SUPPORTED_PICTURE_FORMATS,
           SecCameraParameters::PIXEL_FORMAT_JPEG);
     p.set(SecCameraParameters::KEY_VIDEO_FRAME_FORMAT,
-          SecCameraParameters::PIXEL_FORMAT_YUV420SP);
+          SecCameraParameters::PIXEL_FORMAT_YUV420P);
     p.setPreviewSize(preview_max_width, preview_max_height);
 
     String8 parameterString;
@@ -347,6 +347,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("sharpness", SHARPNESS_DEFAULT);
     ip.set("saturation", SATURATION_DEFAULT);
     ip.set("metering", "center");
+    ip.set("contrast", CONTRAST_DEFAULT);
+    ip.set("iso", "auto");
 
     ip.set("wdr", 0);
     ip.set("chk_dataline", 0);
@@ -376,6 +378,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
      * want to change something.
      */
     setParameters(p);
+    mSecCamera->setISO(ISO_AUTO);
+    mSecCamera->setContrast(CONTRAST_DEFAULT);
     mSecCamera->setMetering(METERING_CENTER);
     mSecCamera->setSharpness(SHARPNESS_DEFAULT);
     mSecCamera->setSaturation(SATURATION_DEFAULT);
@@ -395,22 +399,28 @@ CameraHardwareSec::~CameraHardwareSec()
 // here I don't know what I am doing, so now debugging
 status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
+    int min_bufs;
+
+    LOGV("%s: mWindow %p", __func__, mWindow);
+
     Mutex::Autolock lock(mPreviewLock);
 
-    int min_bufs;
-    
     mWindow = window;
-    LOGV("%s: mWindow %p", __func__, mWindow);
     if (!window) {
         LOGE("preview window is NULL!");
         return OK;
+    }
+
+    if (mPreviewRunning && !mPreviewStartDeferred) {
+        LOGI("stop preview (window change)");
+        stopPreview_l();
     }
 
     if (window->get_min_undequeued_buffer_count(window, &min_bufs)) {
         LOGE("%s: could not retrieve min undequeued buffer count", __func__);
         return INVALID_OPERATION;
     }
-    
+
     if (min_bufs >= kBufferCount) {
         LOGE("%s: min undequeued buffer count %d is too high (expecting at most %d)", __func__,
              min_bufs, kBufferCount - 1);
@@ -428,7 +438,7 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
     int hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
     
     const char *str_preview_format = mParameters.getPreviewFormat();
-    LOGI("%s: preview format %s", __func__, str_preview_format);
+    LOGV("%s: preview format %s", __func__, str_preview_format);
     
     if (window->set_usage(window, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
         LOGE("%s: could not set usage on gralloc buffer", __func__);
@@ -443,13 +453,31 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
         return INVALID_OPERATION;
     }
 
+    // if we were called after startPreview
+    if(mPreviewRunning && mPreviewStartDeferred) {
+        int ret = startPreview_l();
+        if (ret < 0) {
+            LOGE("ERR(%s):Fail on startPreview_l", __func__);
+            return UNKNOWN_ERROR;
+        } else {
+            mPreviewStartDeferred = false;
+            mPreviewCondition.signal();
+        }
+    }
+
     return NO_ERROR;
 }
 
 status_t CameraHardwareSec::storeMetaDataInBuffers(bool enable)
 {
-    // we don't support storing the meta data in the video buffers
-    return INVALID_OPERATION;
+    // FIXME:
+    // metadata buffer mode can be turned on or off.
+    // Samsung needs to fix this.
+    if (!enable) {
+        LOGE("Non-metadata buffer mode is not supported!");
+        return INVALID_OPERATION;
+    }
+    return OK;
 }
 
 void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
@@ -502,17 +530,17 @@ int CameraHardwareSec::previewThreadWrapper()
     while (1) {
         mPreviewLock.lock();
         while (!mPreviewRunning) {
-            LOGI("%s: calling mSecCamera->stopPreview() and waiting", __func__);
+            LOGV("%s: calling mSecCamera->stopPreview() and waiting", __func__);
             mSecCamera->stopPreview();
             /* signal that we're stopping */
             mPreviewStoppedCondition.signal();
             mPreviewCondition.wait(mPreviewLock);
-            LOGI("%s: return from wait", __func__);
+            LOGV("%s: return from wait", __func__);
         }
         mPreviewLock.unlock();
 
         if (mExitPreviewThread) {
-            LOGI("%s: exiting", __func__);
+            LOGV("%s: exiting", __func__);
             mSecCamera->stopPreview();
             return 0;
         }
@@ -528,10 +556,6 @@ int CameraHardwareSec::previewThread()
     unsigned int    phyCAddr;
     struct addrs*   addrs;
     int             width, height, frame_size, offset;
-
-    if(!mWindow) {
-        return NO_ERROR;
-    }
 
     index = mSecCamera->getPreview();
     if (index < 0) {
@@ -662,10 +686,7 @@ recording:
 
 status_t CameraHardwareSec::startPreview()
 {
-    int ret = 0;        //s1 [Apply factory standard]
-    int width, height, frame_size;
-
-    LOGI("%s :", __func__);
+    LOGV("%s - start", __func__);
 
     Mutex::Autolock lock(mStateLock);
     if (mCaptureInProgress) {
@@ -673,14 +694,32 @@ status_t CameraHardwareSec::startPreview()
         return INVALID_OPERATION;
     }
 
-    mPreviewLock.lock();
+    Mutex::Autolock previewLock(mPreviewLock);
     if (mPreviewRunning) {
         LOGE("%s : preview thread already running", __func__);
-        mPreviewLock.unlock();
         return INVALID_OPERATION;
     }
 
-    setSkipFrame(INITIAL_SKIP_FRAME);
+    mPreviewRunning = true;
+    mPreviewStartDeferred = false;
+
+    if(!mWindow) {
+        mPreviewStartDeferred = true;
+        return NO_ERROR;
+    }
+
+    int ret = startPreview_l();
+    if (ret == OK) {
+        mPreviewCondition.signal();
+    }
+
+    return ret;
+}
+
+status_t CameraHardwareSec::startPreview_l()
+{
+    status_t ret;
+    int width, height, frame_size;
 
     ret = mSecCamera->startPreview();
     if (ret < 0) {
@@ -688,16 +727,17 @@ status_t CameraHardwareSec::startPreview()
         return UNKNOWN_ERROR;
     }
 
-    mSecCamera->getPreviewSize(&width, &height, &frame_size);
+    setSkipFrame(INITIAL_SKIP_FRAME);
 
+    mSecCamera->getPreviewSize(&width, &height, &frame_size);
     LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
-            mSecCamera->getCameraFd(), frame_size * kBufferCount, width, height);
+             mSecCamera->getCameraFd(), frame_size * kBufferCount, width, height);
 
     RELEASE_MEMORY_BUFFER(mPreviewMemory);
     mPreviewMemory = mGetMemoryCb(mSecCamera->getCameraFd(),
-                                    frame_size,
-                                    kBufferCount,
-                                    mCallbackCookie);
+                                  frame_size,
+                                  kBufferCount,
+                                  mCallbackCookie);
     if (!mPreviewMemory) {
         LOGE("ERR(%s): Preview heap creation fail", __func__);
         return NO_MEMORY;
@@ -705,30 +745,36 @@ status_t CameraHardwareSec::startPreview()
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
     LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
-         mPostViewWidth,mPostViewHeight,mPostViewSize);
+             mPostViewWidth,mPostViewHeight,mPostViewSize);
 
-    mPreviewRunning = true;
-    mPreviewCondition.signal();
-    mPreviewLock.unlock();
-
-    return NO_ERROR;
+    return OK;
 }
 
 void CameraHardwareSec::stopPreview()
 {
     LOGV("%s :", __func__);
 
-    /* request that the preview thread stop. */
-    mPreviewLock.lock();
-    if (mPreviewRunning) {
-        mPreviewRunning = false;
+    Mutex::Autolock lock(mPreviewLock);
+    stopPreview_l();
+}
+
+void CameraHardwareSec::stopPreview_l()
+{
+    LOGV("%s - start", __func__);
+
+    if (!mPreviewRunning) {
+        LOGD("%s : preview not running, doing nothing", __func__);
+        return;
+    }
+
+    mPreviewRunning = false;
+    if (!mPreviewStartDeferred) {
         mPreviewCondition.signal();
         /* wait until preview thread is stopped */
         mPreviewStoppedCondition.wait(mPreviewLock);
     } else {
-        LOGI("%s : preview not running, doing nothing", __func__);
+        LOGD("%s : preview running but deferred, doing nothing", __func__);
     }
-    mPreviewLock.unlock();
 }
 
 bool CameraHardwareSec::previewEnabled()
@@ -747,7 +793,6 @@ status_t CameraHardwareSec::startRecording()
     Mutex::Autolock lock(mRecordLock);
 
     RELEASE_MEMORY_BUFFER(mRecordHeap);
-
     mRecordHeap = mGetMemoryCb(-1, sizeof(struct addrs), kBufferCount, NULL);
     if (!mRecordHeap) {
         LOGE("ERR(%s): Record heap creation fail", __func__);
