@@ -18,7 +18,7 @@
 # that are specific to this hardware: i.e. those are device-specific
 # drivers, configuration files, settings, etc...
 
-# Note that galaxies is not a fully open device. Some of the drivers
+# Note that galaxys is not a fully open device. Some of the drivers
 # aren't publicly available in all circumstances, which means that some
 # of the hardware capabilities aren't present in builds where those
 # drivers aren't available. Such cases are handled by having this file
@@ -126,6 +126,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     libstagefrighthw
 
+# Usb accessory
+PRODUCT_PACKAGES += \
+    com.android.future.usb.accessory
+
 # apns config file
 PRODUCT_COPY_FILES += \
     development/data/etc/apns-conf.xml:system/etc/apns-conf.xml
@@ -144,6 +148,7 @@ PRODUCT_COPY_FILES += \
     frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
     frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
     frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+    frameworks/base/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
     packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 # The OpenGL ES API level that is natively supported by this device.
@@ -174,6 +179,10 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.kernel.android.checkjni=0 \
     dalvik.vm.checkjni=false
+
+# Set default USB interface
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+    persist.sys.usb.config=mtp
 
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
