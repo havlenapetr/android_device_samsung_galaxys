@@ -55,7 +55,8 @@ PRODUCT_COPY_FILES += \
     device/samsung/galaxys/fota.rc:root/fota.rc \
     device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
-ifeq ($(DEVICE_BOOTS_FROM_SDCARD),true)
+TARGET_USES_SDBOOT := true
+ifeq ($(TARGET_USES_SDBOOT),true)
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.sdboot.rc:root/init.aries.rc
 else
@@ -75,6 +76,13 @@ PRODUCT_COPY_FILES += \
     bootable/recovery/res/images/indeterminate04.png:root/res/images/indeterminate04.png \
     bootable/recovery/res/images/indeterminate05.png:root/res/images/indeterminate05.png \
     bootable/recovery/res/images/indeterminate06.png:root/res/images/indeterminate06.png \
+    bootable/recovery/res/images/icon_installing_overlay01.png:root/res/images/icon_installing_overlay01.png \
+    bootable/recovery/res/images/icon_installing_overlay02.png:root/res/images/icon_installing_overlay02.png \
+    bootable/recovery/res/images/icon_installing_overlay03.png:root/res/images/icon_installing_overlay03.png \
+    bootable/recovery/res/images/icon_installing_overlay04.png:root/res/images/icon_installing_overlay04.png \
+    bootable/recovery/res/images/icon_installing_overlay05.png:root/res/images/icon_installing_overlay05.png \
+    bootable/recovery/res/images/icon_installing_overlay06.png:root/res/images/icon_installing_overlay06.png \
+    bootable/recovery/res/images/icon_installing_overlay07.png:root/res/images/icon_installing_overlay07.png \
     bootable/recovery/res/images/progress_empty.png:root/res/images/progress_empty.png \
     bootable/recovery/res/images/progress_fill.png:root/res/images/progress_fill.png
 
