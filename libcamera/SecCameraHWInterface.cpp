@@ -1749,7 +1749,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // focus areas
     const char *new_focus_area = params.get(SecCameraParameters::KEY_FOCUS_AREAS);
     if (new_focus_area != NULL) {
-        LOGI("focus area: %s", new_focus_area);
+        LOGV("focus area: %s", new_focus_area);
         SecCameraArea area(new_focus_area);
 
         if(!area.isDummy()) {
@@ -1762,7 +1762,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             x = (x * width) / 2000;
             y = (y * height) / 2000;
 
-            LOGI("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
+            LOGV("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
             if(mSecCamera->setObjectPosition(x, y) < 0) {
                 LOGE("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
                 ret = UNKNOWN_ERROR;
