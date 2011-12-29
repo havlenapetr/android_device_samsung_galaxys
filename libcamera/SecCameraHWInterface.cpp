@@ -275,6 +275,11 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_FLASH_MODE,
               SecCameraParameters::FLASH_MODE_OFF);
 
+        // focus areas
+        SecCameraArea dummyArea;
+        p.set(SecCameraParameters::KEY_MAX_NUM_FOCUS_AREAS, "1");
+        p.set(SecCameraParameters::KEY_FOCUS_AREAS, dummyArea.toString8());
+
         /*
         ce147 know nothing about scene modes
         parameterString = SecCameraParameters::SCENE_MODE_AUTO;
@@ -1738,6 +1743,36 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             mParameters.set(SecCameraParameters::KEY_GPS_PROCESSING_METHOD, new_gps_processing_method_str);
         } else {
             mParameters.remove(SecCameraParameters::KEY_GPS_PROCESSING_METHOD);
+        }
+    }
+
+    // focus areas
+    const char *new_focus_area = params.get(SecCameraParameters::KEY_FOCUS_AREAS);
+    if (new_focus_area != NULL) {
+        LOGI("focus area: %s", new_focus_area);
+        SecCameraArea area(new_focus_area);
+
+        if(!area.isDummy()) {
+            int width, height, frame_size;
+            mSecCamera->getPreviewSize(&width, &height, &frame_size);
+
+            int x, y;
+            area.getXY(&x, &y);
+
+            x = (x * width) / 2000;
+            y = (y * height) / 2000;
+
+            LOGI("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
+            if(mSecCamera->setObjectPosition(x, y) < 0) {
+                LOGE("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
+                ret = UNKNOWN_ERROR;
+            }
+        }
+
+        int val = area.isDummy() ? 0 : 1;
+        if(mSecCamera->setTouchAFStartStop(val) < 0) {
+            LOGE("ERR(%s):Fail on mSecCamera->setTouchAFStartStop(%d)", __func__, val);
+            ret = UNKNOWN_ERROR;
         }
     }
 
