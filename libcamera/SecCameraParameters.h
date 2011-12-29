@@ -20,7 +20,71 @@
 
 #include <camera/CameraParameters.h>
 
+#include <stdlib.h>
+
 namespace android {
+
+struct SecCameraArea {
+    int left;
+    int top;
+    int right;
+    int bottom;
+    int weight;
+
+    SecCameraArea() {
+        left = top = right = bottom = weight = 0;
+    }
+
+    SecCameraArea(int l, int t, int r, int b, int w) {
+        left = l;
+        top = t;
+        right = r;
+        bottom = b;
+        weight = w;
+    }
+
+    SecCameraArea(const char* str) {
+        char* end;
+        bool ok;
+
+        ok = false;
+        if (str != NULL && str[0] == '(') {
+            left = (int)strtol(str+1, &end, 10);
+            if (*end != ',') goto dummy;
+            top = (int)strtol(end+1, &end, 10);
+            if (*end != ',') goto dummy;
+            right = (int)strtol(end+1, &end, 10);
+            if (*end != ',') goto dummy;
+            bottom = (int)strtol(end+1, &end, 10);
+            if (*end != ',') goto dummy;
+            weight = (int)strtol(end+1, &end, 10);
+            if (*end != ')') goto dummy;
+            ok = true;
+        }
+
+    dummy:
+        if (!ok) {
+            left = top = right = bottom = weight = 0;
+        }
+    }
+
+    void getXY(int* x, int* y) {
+        int diffY = (top - bottom) / 2;
+        int diffX = (right - left) / 2;
+
+        *y = bottom + diffY + 1000;
+        *x = left + diffX + 1000;
+    }
+
+    bool isDummy() {
+        return left == 0 && top == 0 && right == 0 && bottom == 0;
+    }
+
+    String8 toString8() {
+        return String8::format("(%i,%i,%i,%i,%i)",
+                               left, top, right, bottom, weight);
+    }
+};
 
 class SecCameraParameters : public CameraParameters
 {
