@@ -40,6 +40,7 @@ TARGET_PROVIDES_INIT_TARGET_RC := true
 TARGET_BOARD_PLATFORM := s5pc110
 TARGET_BOOTLOADER_BOARD_NAME := aries
 TARGET_RECOVERY_UI_LIB := librecovery_ui_aries
+TARGET_RECOVERY_GRAPHICS_LIB := librecovery_graphics_aries
 TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
 
 BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
@@ -96,7 +97,6 @@ WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
 # Recovery
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_HAS_NO_SELECT_BUTTON := true
-BOARD_CUSTOM_GRAPHICS := ../../../device/samsung/galaxys/recovery/graphics.c
 BOARD_USES_BML_OVER_MTD := true
 BOARD_CUSTOM_BOOTIMG_MK := device/samsung/galaxys/shbootimg.mk
 TARGET_RECOVERY_PRE_COMMAND="echo 1 > /cache/.startrecovery; sync;"
