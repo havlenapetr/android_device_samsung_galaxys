@@ -103,6 +103,10 @@ PRODUCT_PACKAGES += \
     make_ext4fs \
     setup_fs
 
+# Bluetooth MAC Address
+PRODUCT_PACKAGES += \
+    bdaddr_read
+
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
