@@ -101,6 +101,10 @@ PRODUCT_PACKAGES += \
     make_ext4fs \
     setup_fs
 
+# Bluetooth MAC Address
+PRODUCT_PACKAGES += \
+    bdaddr_read
+
 # charger
 PRODUCT_PACKAGES += \
     charger \

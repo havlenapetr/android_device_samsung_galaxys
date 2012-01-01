@@ -27,7 +27,6 @@ on boot
     setprop ro.build.product aries
     setprop ro.product.device aries
     setprop ro.radio.noril yes
-    setprop ro.bt.bdaddr_path "/efs/bluetooth/bt_addr"
 
 # fake some battery state
     setprop status.battery.state Slow
@@ -75,8 +74,6 @@ on fs
     chmod 770 /efs/imei
 
 # permissions for bluetooth.
-    chown bluetooth bluetooth /efs/bluetooth
-    chown bluetooth bluetooth ro.bt.bdaddr_path
     chown bluetooth bluetooth /dev/s3c2410_serial0
     chmod 0600 /dev/s3c2410_serial0
     chmod 0660 /sys/class/rfkill/rfkill0/state
