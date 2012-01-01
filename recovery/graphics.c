@@ -301,7 +301,7 @@ int gr_init(void)
     
     get_memory_surface(&gr_mem_surface);
     
-    fprintf(stderr, "framebuffer: fd %d (%d x %d)\n",
+    fprintf(stderr, "aries framebuffer: fd %d (%d x %d)\n",
             gr_fb_fd, gr_framebuffer[0].width, gr_framebuffer[0].height);
     
     /* start with 0 as front (displayed) and 1 as back (drawing) */
