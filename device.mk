@@ -50,8 +50,7 @@ PRODUCT_COPY_FILES := \
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.usb.rc:root/init.aries.usb.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
-    device/samsung/galaxys/recovery.rc:root/recovery.rc \
-    device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
+    device/samsung/galaxys/recovery.rc:root/recovery.rc
 
 TARGET_USES_SDBOOT := true
 ifeq ($(TARGET_USES_SDBOOT),true)
