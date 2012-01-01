@@ -10,6 +10,9 @@ on init
     symlink /mnt/sdcard /sdcard
     mkdir /datadata 0771 system system
 
+on charger
+    write /dev/graphics/fb3 1
+
 on boot
     mount debugfs /sys/kernel/debug /sys/kernel/debug
 
@@ -269,6 +272,10 @@ service tvout /vendor/bin/tvoutserver
     group graphics
 
 service tvouthack /vendor/bin/tvouthack
+    class late_start
     user system
     group graphics
     disabled
+
+service battery_charger /sbin/charger
+    class charger

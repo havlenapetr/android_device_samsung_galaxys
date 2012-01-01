@@ -51,8 +51,6 @@ PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.usb.rc:root/init.aries.usb.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc \
-    device/samsung/galaxys/lpm.rc:root/lpm.rc \
-    device/samsung/galaxys/fota.rc:root/fota.rc \
     device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
 TARGET_USES_SDBOOT := true
@@ -102,6 +100,11 @@ PRODUCT_PACKAGES := \
 PRODUCT_PACKAGES += \
     make_ext4fs \
     setup_fs
+
+# charger
+PRODUCT_PACKAGES += \
+    charger \
+    charger_res_images
 
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
