@@ -11,6 +11,7 @@ on init
     mkdir /datadata 0771 system system
 
 on charger
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor powersave
     write /dev/graphics/fb3 1
 
 on boot
