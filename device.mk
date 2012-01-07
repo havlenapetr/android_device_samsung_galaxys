@@ -95,6 +95,10 @@ PRODUCT_PACKAGES := \
     cypress-touchkey.kcm \
     s3c-keypad.kcm
 
+# Input device calibration files
+PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/mxt224_ts_input.idc:system/usr/idc/mxt224_ts_input.idc
+
 # Filesystem management tools
 PRODUCT_PACKAGES += \
     make_ext4fs \
@@ -113,6 +117,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
     device/samsung/galaxys/media_profiles.xml:system/etc/media_profiles.xml
+
+# Video and jpeg hw libs
+PRODUCT_PACKAGES += \
+    libs3cjpeg \
+    libstagefrighthw
 
 # These are the OpenMAX IL modules
 PRODUCT_PACKAGES += \
@@ -135,10 +144,6 @@ PRODUCT_PACKAGES += \
 # fmradio app
 #PRODUCT_PACKAGES += \
 #   FM
-
-# Libs
-PRODUCT_PACKAGES += \
-    libstagefrighthw
 
 # Usb accessory
 PRODUCT_PACKAGES += \
