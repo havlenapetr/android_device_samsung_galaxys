@@ -17,6 +17,9 @@ on charger
 on boot
     mount debugfs /sys/kernel/debug /sys/kernel/debug
 
+# Enable mDNIe_VIDEO_MODE which will great impact on screen sharpness
+    write /sys/class/mdnieset_ui/switch_mdnieset_ui/mdnieset_ui_file_cmd 1
+
 # Backwards Compat - XXX: Going away in G*
     symlink /system/etc /etc
     symlink /mnt/sdcard /sdcard
