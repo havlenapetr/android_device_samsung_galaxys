@@ -70,7 +70,7 @@ EOF
 
 BOARD_GPS_LIBRARIES := libgps
 
-USE_CAMERA_STUB := true
+USE_CAMERA_STUB := false
 
 BOARD_USES_GENERIC_AUDIO := false
 

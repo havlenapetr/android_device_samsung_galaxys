@@ -141,9 +141,12 @@ PRODUCT_PACKAGES += \
     audio_policy.aries \
     camera.aries.so
 
-# fmradio app
-#PRODUCT_PACKAGES += \
-#   FM
+# FmRadio
+ifeq ($(BOARD_HAVE_FM_RADIO),true)
+PRODUCT_PACKAGES += \
+    FMRadio \
+    com.android.fmradio
+endif
 
 # Usb accessory
 PRODUCT_PACKAGES += \
