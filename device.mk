@@ -52,7 +52,7 @@ PRODUCT_COPY_FILES += \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc
 
-TARGET_USES_SDBOOT := true
+TARGET_USES_SDBOOT := false
 ifeq ($(TARGET_USES_SDBOOT),true)
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/init.aries.sdboot.rc:root/init.aries.rc
@@ -139,7 +139,7 @@ PRODUCT_PACKAGES += \
     sensors.aries \
     audio.primary.aries \
     audio_policy.aries \
-    camera.aries.so
+    camera.aries
 
 # FmRadio
 ifeq ($(BOARD_HAVE_FM_RADIO),true)
