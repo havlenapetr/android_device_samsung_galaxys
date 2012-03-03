@@ -192,6 +192,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     if (cameraId == SecCamera::CAMERA_ID_BACK) {
         parameterString = SecCameraParameters::FOCUS_MODE_AUTO;
         parameterString.append(",");
+		parameterString.append(CameraParameters::FOCUS_MODE_INFINITY);
+        parameterString.append(",");
         parameterString.append(SecCameraParameters::FOCUS_MODE_MACRO);
         p.set(SecCameraParameters::KEY_SUPPORTED_FOCUS_MODES,
               parameterString.string());
@@ -588,74 +590,87 @@ int CameraHardwareSec::previewThread()
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
     offset = frame_size * index;
 
-    // Notify the client of a new frame.
-    if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
-        // copy memory from camera to android's preview memory
-        memcpy(static_cast<unsigned char *> (mPreviewMemory->data) + (offset + frame_size    ),
-               &phyYAddr, 4);
-        memcpy(static_cast<unsigned char *> (mPreviewMemory->data) + (offset + frame_size + 4),
-               &phyCAddr, 4);
-
-        mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewMemory, index, NULL, mCallbackCookie);
-    } else {
+	// draw new frame into window
+    if(mWindow && mGrallocHal) {
         buffer_handle_t *buf_handle;
         int stride;
-        if (0 != mWindow->dequeue_buffer(mWindow, &buf_handle, &stride)) {
-            LOGE("Could not dequeue gralloc buffer!\n");
-            goto recording;
-        }
+		int ret;
 
-        void *vaddr;
-        if (!mGrallocHal->lock(mGrallocHal,
-                               *buf_handle,
-                               GRALLOC_USAGE_SW_WRITE_OFTEN,
-                               0, 0, width, height, &vaddr)) {
-            char *frame = ((char *)mPreviewMemory->data) + offset;
-            
-            // the code below assumes YUV, not RGB
-            {
-                int h;
-                char *src = frame;
-                char *ptr = (char *)vaddr;
-                
-                // Copy the Y plane, while observing the stride
-                for (h = 0; h < height; h++) {
-                    memcpy(ptr, src, width);
-                    ptr += stride;
-                    src += width;
-                }
-                
+        if (0 != (ret = mWindow->dequeue_buffer(mWindow, &buf_handle, &stride))) {
+            LOGE("%s: Could not dequeue gralloc buffer: %i!", __func__, ret);
+        } else {
+            void *vaddr;
+            if (!mGrallocHal->lock(mGrallocHal,
+                                   *buf_handle,
+                                   GRALLOC_USAGE_SW_WRITE_OFTEN,
+                                   0, 0, width, height, &vaddr)) {
+                char *frame = ((char *)mPreviewMemory->data) + offset;
+
+                // the code below assumes YUV, not RGB
                 {
-                    // U
-                    char *v = ptr;
-                    ptr += stride * height / 4;
-                    for (h = 0; h < height / 2; h++) {
-                        memcpy(ptr, src, width / 2);
-                        ptr += stride / 2;
-                        src += width / 2;
+                    int h;
+                    char *src = frame;
+                    char *ptr = (char *)vaddr;
+                
+                    // Copy the Y plane, while observing the stride
+                    for (h = 0; h < height; h++) {
+                        memcpy(ptr, src, width);
+                        ptr += stride;
+                        src += width;
                     }
-                    // V
-                    ptr = v;
-                    for (h = 0; h < height / 2; h++) {
-                        memcpy(ptr, src, width / 2);
-                        ptr += stride / 2;
-                        src += width / 2;
-                    }
+                
+                    {
+                        // U
+                        char *v = ptr;
+                        ptr += stride * height / 4;
+                        for (h = 0; h < height / 2; h++) {
+                            memcpy(ptr, src, width / 2);
+                            ptr += stride / 2;
+                            src += width / 2;
+                        }
+                        // V
+                        ptr = v;
+                        for (h = 0; h < height / 2; h++) {
+                            memcpy(ptr, src, width / 2);
+                            ptr += stride / 2;
+                            src += width / 2;
+                        }
+		            }      
                 }
-            }
             
-            mGrallocHal->unlock(mGrallocHal, *buf_handle);
+                mGrallocHal->unlock(mGrallocHal, *buf_handle);
+            } else {
+                LOGE("%s: Could not obtain gralloc buffer", __func__);
+		    }
+
+            if (0 != (ret = mWindow->enqueue_buffer(mWindow, buf_handle))) {
+                LOGE("%s: Could not enqueue gralloc buffer: %i!", __func__, ret);
+            }
         }
-        else
-            LOGE("%s: could not obtain gralloc buffer", __func__);
-        
-        if (0 != mWindow->enqueue_buffer(mWindow, buf_handle)) {
-            LOGE("Could not enqueue gralloc buffer!\n");
-            goto recording;
+	}
+
+    // Notify the client of a new frame.
+    if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
+        const char * preview_format = mParameters.getPreviewFormat();
+        if (!strcmp(preview_format, CameraParameters::PIXEL_FORMAT_YUV420SP)) {
+            // Color conversion from YUV420 to NV21
+            char *vu = ((char *)mPreviewMemory->data) + offset + width * height;
+            const int uv_size = (width * height) >> 1;
+            char saved_uv[uv_size];
+            memcpy(saved_uv, vu, uv_size);
+            char *u = saved_uv;
+            char *v = u + (uv_size >> 1);
+
+            int h = 0;
+            while (h < width * height / 4) {
+                *vu++ = *v++;
+                *vu++ = *u++;
+                ++h;
+            }
         }
+        mDataCb(CAMERA_MSG_PREVIEW_FRAME, mPreviewMemory, index, NULL, mCallbackCookie);
     }
 
-recording:
     Mutex::Autolock lock(mRecordLock);
     if (mRecordRunning == true) {
         index = mSecCamera->getRecordFrame();
@@ -836,12 +851,9 @@ bool CameraHardwareSec::recordingEnabled()
     return mRecordRunning;
 }
 
-void CameraHardwareSec::releaseRecordingFrame(const sp<IMemory>& mem)
+void CameraHardwareSec::releaseRecordingFrame(const void *opaque)
 {
-    ssize_t offset;
-    sp<IMemoryHeap> heap = mem->getMemory(&offset, NULL);
-    struct addrs *addrs = (struct addrs *)((uint8_t *)heap->base() + offset);
-
+    struct addrs *addrs = (struct addrs *)opaque;
     mSecCamera->releaseRecordFrame(addrs->buf_index);
 }
 

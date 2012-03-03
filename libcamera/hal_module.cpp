@@ -224,7 +224,7 @@ void camera_release_recording_frame(struct camera_device * device,
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
 
-    //hw->releaseRecordingFrame(opaque);
+    hw->releaseRecordingFrame(opaque);
 }
 
 int camera_auto_focus(struct camera_device * device)

@@ -56,7 +56,7 @@ public:
     status_t    startRecording();
     void        stopRecording();
     bool        recordingEnabled();
-    void        releaseRecordingFrame(const sp<IMemory> &mem);
+    void        releaseRecordingFrame(const void *opaque);
 
     status_t    init();
     status_t    autoFocus();
@@ -73,7 +73,6 @@ public:
 
 private:
     static  const int   kBufferCount = MAX_BUFFERS;
-    static  const int   kBufferCountForHd = MAX_BUFFERS_HD;
 
     class PreviewThread : public Thread {
         CameraHardwareSec *mHardware;
