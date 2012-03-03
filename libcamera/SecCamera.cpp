@@ -74,27 +74,6 @@ namespace android {
 // ======================================================================
 // Camera controls
 
-static struct timeval time_start;
-static struct timeval time_stop;
-
-unsigned long measure_time(struct timeval *start, struct timeval *stop)
-{
-    unsigned long sec, usec, time;
-
-    sec = stop->tv_sec - start->tv_sec;
-
-    if (stop->tv_usec >= start->tv_usec) {
-        usec = stop->tv_usec - start->tv_usec;
-    } else {
-        usec = stop->tv_usec + 1000000 - start->tv_usec;
-        sec--;
-    }
-
-    time = (sec * 1000000) + usec;
-
-    return time;
-}
-
 static int get_pixel_depth(unsigned int fmt)
 {
     int depth = 0;
@@ -130,28 +109,6 @@ static int get_pixel_depth(unsigned int fmt)
     }
 
     return depth;
-}
-
-#define ALIGN_W(x)      (((x) + 0x7F) & (~0x7F))    // Set as multiple of 128
-#define ALIGN_H(x)      (((x) + 0x1F) & (~0x1F))    // Set as multiple of 32
-#define ALIGN_BUF(x)    (((x) + 0x1FFF)& (~0x1FFF)) // Set as multiple of 8K
-
-static int init_preview_buffers(struct fimc_buffer *buffers, int width, int height, unsigned int fmt)
-{
-    int i, len;
-
-    if (fmt==V4L2_PIX_FMT_NV12T) {
-        len = ALIGN_BUF(ALIGN_W(width) * ALIGN_H(height)) +
-              ALIGN_BUF(ALIGN_W(width) * ALIGN_H(height / 2));
-    } else {
-        len = (width * height * get_pixel_depth(fmt)) / 8;
-    }
-
-    for (i = 0; i < MAX_BUFFERS; i++) {
-        buffers[i].length = len;
-    }
-
-    return 0;
 }
 
 static int fimc_poll(struct pollfd *events)

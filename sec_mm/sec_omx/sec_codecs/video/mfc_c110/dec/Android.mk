@@ -9,7 +9,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_MODULE := libsecmfcdecapi.aries
 
-LOCAL_PRELINK_MODULE := false
+
 
 LOCAL_CFLAGS :=
 
