@@ -11,8 +11,7 @@ LOCAL_CFLAGS := $(TARGET_IPC_LIB_CFLAGS)
 
 LOCAL_C_INCLUDES := \
     hardware/ril/samsung-ril/samsung-ipc \
-    external/openssl/include \
-    $(LOCAL_PATH)/include
+    external/openssl/include
 
 LOCAL_SRC_FILES := \
     aries_ipc.c
