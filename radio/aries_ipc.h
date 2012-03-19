@@ -41,9 +41,6 @@
 
 #define MAX_MODEM_DATA_SIZE     0x1000
 
-int phonet_iface_ifdown(void);
-int phonet_iface_ifup(void);
-
 struct aries_ipc_handlers_common_data
 {
     int fd;
