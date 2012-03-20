@@ -48,6 +48,9 @@
 #include "onedram.h"
 #include "phonet.h"
 
+//#define DEBUG_RECV 1
+//#define DEBUG_SEND 1
+
 #define IPC_LOG(...) \
     ipc_client_log(client, __VA_ARGS__)
 
@@ -268,7 +271,7 @@ boot_loop_start:
     SELECT_WRITE_FDS(fds, timeout);
     write(s3c2410_serial3_fd, &crc_byte, sizeof(crc_byte));
 
-    IPC_LOG("%s: crc_byte sent");
+    IPC_LOG("%s: crc_byte sent", __func__);
 
     data = 0;
     for(i = 0 ; data != 0x01 ; i++) {
@@ -394,10 +397,12 @@ aries_ipc_fmt_client_send(struct ipc_client *client, struct ipc_message_info *re
 
     assert(client->handlers->write != NULL);
 
+#ifdef DEBUG_SEND
     IPC_LOG("aries_ipc_fmt_client_send: SEND FMT!");
     IPC_LOG("aries_ipc_fmt_client_send: IPC request (mseq=0x%02x command=%s (0x%04x) type=%s)", 
-                    request->mseq, ipc_command_to_str(IPC_COMMAND(request)), IPC_COMMAND(request),
-                    ipc_request_type_to_str(request->type));
+			request->mseq, ipc_command_to_str(IPC_COMMAND(request)),
+			IPC_COMMAND(request), ipc_request_type_to_str(request->type));
+#endif
 
 #ifdef DEBUG
     if(request->length > 0) {
@@ -430,10 +435,12 @@ aries_ipc_rfs_client_send(struct ipc_client *client, struct ipc_message_info *re
 
     assert(client->handlers->write != NULL);
 
+#ifdef DEBUG_SEND
     IPC_LOG("aries_ipc_rfs_client_send: SEND RFS (id=%d cmd=%d len=%d)!",
             rfs_hdr->id, rfs_hdr->cmd, rfs_hdr->len);
     IPC_LOG("aries_ipc_rfs_client_send: IPC request (mseq=0x%02x command=%s (0x%04x))", 
             request->mseq, ipc_command_to_str(IPC_COMMAND(request)), IPC_COMMAND(request));
+#endif
 
 #ifdef DEBUG
     if(request->length > 0) {
@@ -464,7 +471,8 @@ aries_ipc_fmt_client_recv(struct ipc_client *client, struct ipc_message_info *re
                  "incoming response[%s]!", __func__, strerror(errno));
 
     if(data == NULL) {
-        IPC_LOG("aries_ipc_fmt_client_recv: we retrieve less (or fairly too much) bytes from the modem than we exepected!");
+        IPC_LOG("aries_ipc_fmt_client_recv: we retrieve less (or fairly too much) " \
+				"bytes from the modem than we exepected!");
         return -1;
     }
 
@@ -478,10 +486,12 @@ aries_ipc_fmt_client_recv(struct ipc_client *client, struct ipc_message_info *re
     response->length = resphdr->length - sizeof(struct ipc_header);
     response->data = NULL;
 
+#ifdef DEBUG_RECV
     IPC_LOG("aries_ipc_fmt_client_recv: RECV FMT!");
     IPC_LOG("aries_ipc_fmt_client_recv: IPC response (aseq=0x%02x command=%s (0x%04x) type=%s)", 
-            response->aseq, ipc_command_to_str(IPC_COMMAND(response)), IPC_COMMAND(response),
-            ipc_response_type_to_str(response->type));
+            response->aseq, ipc_command_to_str(IPC_COMMAND(response)),
+			IPC_COMMAND(response), ipc_response_type_to_str(response->type));
+#endif
 
     if(response->length > 0) {
 #ifdef DEBUG
@@ -510,14 +520,15 @@ aries_ipc_rfs_client_recv(struct ipc_client *client, struct ipc_message_info *re
     memset(response, 0, sizeof(struct ipc_message_info));
 
     assert(client->handlers->read != NULL);
-    bread = client->handlers->read((uint8_t*) data, MAX_MODEM_DATA_SIZE, client->handlers->read_data);
+    bread = client->handlers->read((uint8_t*) data, MAX_MODEM_DATA_SIZE,
+								   client->handlers->read_data);
     CHECK(bread, "%s: can't receive enough bytes from modem to process " \
                  "incoming response[%s]!", __func__, strerror(errno));
 
     rfs_hdr = (struct rfs_hdr *) data;
-
     if(rfs_hdr->len <= 0 || rfs_hdr->len >= MAX_MODEM_DATA_SIZE || data == NULL) {
-        IPC_LOG("aries_ipc_rfs_client_recv: we retrieve less (or fairly too much) bytes from the modem than we exepected!");
+        IPC_LOG("aries_ipc_rfs_client_recv: we retrieve less (or fairly too much) " \
+				"bytes from the modem than we exepected!");
         return -1;
     }
 
@@ -529,10 +540,12 @@ aries_ipc_rfs_client_recv(struct ipc_client *client, struct ipc_message_info *re
     response->length = rfs_hdr->len - sizeof(struct rfs_hdr);
     response->data = NULL;
 
+#ifdef DEBUG_RECV
     IPC_LOG("aries_ipc_rfs_client_recv: RECV RFS (id=%d cmd=%d len=%d)!",
             rfs_hdr->id, rfs_hdr->cmd, rfs_hdr->len - sizeof(struct rfs_hdr));
     IPC_LOG("aries_ipc_rfs_client_recv: IPC response (aseq=0x%02x command=%s (0x%04x))", 
             response->mseq, ipc_command_to_str(IPC_COMMAND(response)), IPC_COMMAND(response));
+#endif
 
     if(response->length > 0) {
 #ifdef DEBUG
