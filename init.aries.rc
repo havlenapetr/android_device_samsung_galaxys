@@ -16,9 +16,6 @@ on charger
 
 on boot
     mount debugfs /sys/kernel/debug /sys/kernel/debug
-
-# Enable mDNIe_VIDEO_MODE which will great impact on screen sharpness
-    write /sys/class/mdnieset_ui/switch_mdnieset_ui/mdnieset_ui_file_cmd 1
     
     setprop ro.build.product aries
     setprop ro.product.device aries
@@ -30,22 +27,12 @@ on boot
     setprop status.battery.level_raw  50
     setprop status.battery.level_scale 9
 
-# wi-fi
-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/dhcp 0770 dhcp dhcp
-
 # phone
     setprop ro.telephony.call_ring.multiple 0
 
 # change permission for uart_switch
     chown radio radio /sys/class/sec/uart_switch/UART_SEL/value
     chmod 660 /sys/class/sec/uart_switch/UART_SEL/value
-
-# create data/gps for GPS demon
-    mkdir /data/gps 700 gps system
-    chown gps system /data/gps
-    chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
-    chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
 
 on fs
     mkdir /radio 0775 radio radio
@@ -73,97 +60,26 @@ on fs
     chown system system /sys/class/backlight/s5p_bl/brightness
 
 on post-fs
-    # We chown/chmod /data and /datadata again so because mount is run as root + defaults
-    chown system system /data
-    chmod 0771 /data
+    # We chown/chmod /datadata again so because mount is run as root + defaults
     chown system system /datadata
     chmod 0771 /datadata
-
-    # Create dump dir and collect dumps.
-    # Do this before we mount cache so eventually we can use cache for
-    # storing dumps on platforms which do not have a dedicated dump partition.
-   
-    mkdir /data/dontpanic
-    chown root log /data/dontpanic
-    chmod 0750 /data/dontpanic
-
-    # Collect apanic data, free resources and re-arm trigger
-    copy /proc/apanic_console /data/dontpanic/apanic_console
-    chown root log /data/dontpanic/apanic_console
-    chmod 0640 /data/dontpanic/apanic_console
-
-    copy /proc/apanic_threads /data/dontpanic/apanic_threads
-    chown root log /data/dontpanic/apanic_threads
-    chmod 0640 /data/dontpanic/apanic_threads
-
-    write /proc/apanic_console 1
-
-    # Same reason as /data above
-    chown system cache /cache
-    chmod 0771 /cache
-
-    # This may have been created by the recovery system with odd permissions
-    chown system cache /cache/recovery
-    chmod 0770 /cache/recovery
-
-    #change permissions on vmallocinfo so we can grab it from bugreports
-    chown root log /proc/vmallocinfo
-    chmod 0440 /proc/vmallocinfo
-
-    #change permissions on kmsg & sysrq-trigger so bugreports can grab kthread stacks
-    chown root system /proc/kmsg
-    chmod 0440 /proc/kmsg
-    chown root system /proc/sysrq-trigger
-    chmod 0220 /proc/sysrq-trigger
-
-# create basic filesystem structure
-    mkdir /data/misc 01771 system misc
-    mkdir /data/misc/bluetoothd 0770 bluetooth bluetooth
-    mkdir /data/misc/bluetooth 0770 system system
-    mkdir /data/misc/keystore 0700 keystore keystore
-    mkdir /data/misc/vpn 0770 system system
-    mkdir /data/misc/systemkeys 0700 system system
-    mkdir /data/misc/vpn/profiles 0770 system system
-    # give system access to wpa_supplicant.conf for backup and restore
-    mkdir /data/misc/wifi 0770 wifi wifi
-    chmod 0770 /data/misc/wifi
-    chmod 0660 /data/misc/wifi/wpa_supplicant.conf
-    mkdir /data/local 0771 shell shell
-    mkdir /data/local/tmp 0771 shell shell
-    #mkdir /data/data 0771 system system
-    # symlink /data/data to /datadata for performance
-    symlink /datadata /data/data
-
-    mkdir /data/app-private 0771 system system
-    mkdir /data/app 0771 system system
-    mkdir /data/property 0700 root root
-
-    # create dalvik-cache and double-check the perms
-    mkdir /data/dalvik-cache 0771 system system
-    chown system system /data/dalvik-cache
-    chmod 0771 /data/dalvik-cache
-
-    mkdir /cache/dalvik-cache 0771 system system
-    chown system system /cache/dalvik-cache
-    chmod 0771 /cache/dalvik-cache
-
-    # create the lost+found directories, so as to enforce our permissions
-    mkdir /data/lost+found 0770
-    mkdir /cache/lost+found 0770
-
-    # double check the perms, in case lost+found already exists, and set owner
-    chown root root /data/lost+found
-    chmod 0770 /data/lost+found
-    chown root root /cache/lost+found
-    chmod 0770 /cache/lost+found
-
-    # allow net_raw to have access to /dev/socket directory
-    chown root net_raw /dev/socket
-    chmod 0775 /dev/socket
 
     # symlinks for samsung RIL
     symlink /radio/modem.bin /dev/block/bml12
 
+on post-fs-data
+    # wi-fi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+
+    # create data/gps for GPS demon
+    mkdir /data/gps 700 gps system
+    chown gps system /data/gps
+    chown gps root /sys/class/sec/gps/GPS_PWR_EN/value
+    chmod 660 /sys/class/sec/gps/GPS_PWR_EN/value
+
+    # download cache
+    mkdir /data/download 0770 system cache
 
 # 3D init
 service pvrsrvinit /system/vendor/bin/pvrsrvinit
