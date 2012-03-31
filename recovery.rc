@@ -20,9 +20,6 @@ loglevel 9
     export LOOP_MOUNTPOINT /mnt/obb
     export BOOTCLASSPATH /system/framework/core.jar:/system/framework/bouncycastle.jar:/system/framework/ext.jar:/system/framework/framework.jar:/system/framework/android.policy.jar:/system/framework/services.jar:/system/framework/core-junit.jar
 
-# symlink to /etc for recovery
-    symlink /system/etc /etc
-
 # Backward compatibility
     symlink /sys/kernel/debug /d
 
@@ -91,9 +88,16 @@ loglevel 9
     # 5.0 %
     write /dev/cpuctl/bg_non_interactive/cpu.shares 52
 
+on fs
+# umount mtd partitions, because recovery need them unmounted for
+# formatting and installing update.zip
+    umount /system
+    umount /data
+    umount /cache
+
 on post-fs
     # once everything is setup, no need to modify /
-    #mount rootfs rootfs / ro remount
+    mount rootfs rootfs / rw remount
 
     # We chown/chmod /data again so because mount is run as root + defaults
     chown system system /data
