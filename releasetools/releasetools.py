@@ -23,13 +23,11 @@ def FullOTA_Assertions(info):
   devices = ["aries", "galaxys", "GT-I9000", "GT-I9000M", "GT-I9000T"]
   info.script.AssertDevices(devices)
 
-  info.script.Print("Extracting utilities...")
   info.script.UnpackPackageDir("firmware", "/tmp")
   info.script.SetPermissions("/tmp/modem.bin", 0, 0, 0644)
 
   info.script.UnpackPackageDir("utilities", "/tmp")
   info.script.SetPermissions("/tmp/bml_over_mtd", 0, 0, 0755)
-  info.script.SetPermissions("/tmp/bml_over_mtd.sh", 0, 0, 0755)
   return True
 
 def FullOTA_GetMkbootimg(info):
@@ -40,10 +38,8 @@ def FullOTA_WriteBootimg(info):
   utils_dir = os.path.join(out_path, 'utilities')
 
   info.output_zip.write(os.path.join(utils_dir, "bml_over_mtd"), "utilities/bml_over_mtd")
-  info.output_zip.write(os.path.join(utils_dir, "bml_over_mtd.sh"), "utilities/bml_over_mtd.sh")
 
-  info.script.Print("Writing kernel...")
   info.script.UnpackPackageFile("boot.img", "/tmp/boot.img")
-  bml_args = ["boot", "72", "reservoir", "2004", "/tmp/boot.img"]
-  info.script.RunProgram("/tmp/bml_over_mtd.sh", bml_args)
+  bml_args = ["flash", "boot", "72", "reservoir", "2004", "/tmp/boot.img"]
+  info.script.RunProgram("/tmp/bml_over_mtd", bml_args)
   return True
