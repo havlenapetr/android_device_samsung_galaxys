@@ -43,10 +43,6 @@ TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
 
 BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
 
-# Releasetools
-TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_ota_from_target_files
-TARGET_RELEASETOOL_IMG_FROM_TARGET_SCRIPT := ./device/samsung/galaxys/releasetools/aries_img_from_target_files
-
 # Bluetooth
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_BCM := true

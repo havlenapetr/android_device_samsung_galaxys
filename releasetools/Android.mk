@@ -52,4 +52,11 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
 LOCAL_SRC_FILES := bml_over_mtd.sh
 include $(BUILD_PREBUILT)
 
+#include $(CLEAR_VARS)
+#LOCAL_MODULE := mksecbootimg
+#LOCAL_MODULE_TAGS := eng
+#LOCAL_MODULE_CLASS := EXECUTABLES
+#LOCAL_SRC_FILES := mksecbootimg.c
+#include $(BUILD_HOST_EXECUTABLE)
+
 endif
