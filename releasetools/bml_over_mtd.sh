@@ -1,4 +1,4 @@
-#!/sbin/busybox sh
+#!/bin/sh
 #
 # bml_over_mtd.sh
 # Take care of bad blocks while flashing kernel image to boot partition
@@ -18,14 +18,6 @@ exec >> /sdcard/bml_over_mtd.log 2>&1
 
 set -x
 export PATH=/:/sbin:/system/xbin:/system/bin:$PATH
-
-busybox cat <<EOF
-########################################################################################
-#
-# Flashing boot image with bml_over_mtd on `busybox date`
-#
-########################################################################################
-EOF
 
 # scan boot partition for bad blocks
 /tmp/bml_over_mtd scan $PARTITION

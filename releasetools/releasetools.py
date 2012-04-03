@@ -20,12 +20,11 @@ import os
 import common
 
 def FullOTA_Assertions(info):
-  info.script.Print("Extracting helper files...")
+  info.script.Print("Extracting utilities...")
   info.script.UnpackPackageDir("firmware", "/tmp")
   info.script.SetPermissions("/tmp/modem.bin", 0, 0, 0644)
 
   info.script.UnpackPackageDir("utilities", "/tmp")
-  info.script.SetPermissions("/tmp/updater.sh", 0, 0, 0755)
   info.script.SetPermissions("/tmp/bml_over_mtd", 0, 0, 0755)
   info.script.SetPermissions("/tmp/bml_over_mtd.sh", 0, 0, 0755)
   return True
@@ -34,11 +33,11 @@ def FullOTA_WriteBootimg(info):
   out_path = os.getenv('OUT')
   utils_dir = os.path.join(out_path, 'utilities')
 
-  info.output_zip.write(os.path.join(utils_dir, "updater.sh"), "utilities/updater.sh")
   info.output_zip.write(os.path.join(utils_dir, "bml_over_mtd"), "utilities/bml_over_mtd")
   info.output_zip.write(os.path.join(utils_dir, "bml_over_mtd.sh"), "utilities/bml_over_mtd.sh")
 
   info.script.Print("Writing kernel...")
   info.script.UnpackPackageFile("boot.img", "/tmp/boot.img")
-  info.script.RunProgram("/tmp/updater.sh")
+  bml_args = ["boot", "72", "reservoir", "2004", "/tmp/boot.img"]
+  info.script.RunProgram("/tmp/bml_over_mtd.sh", bml_args)
   return True
