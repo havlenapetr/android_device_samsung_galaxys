@@ -34,6 +34,9 @@ TARGET_GLOBAL_CPPFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
 
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
+
+# Releasetools
+TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/galaxys/releasetools
 TARGET_MKBOOTIMG_SCRIPT := device/samsung/galaxys/releasetools/mksecbootimg.py
 
 TARGET_BOARD_PLATFORM := s5pc110
@@ -90,5 +93,3 @@ WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
 
 # Recovery
 TARGET_USERIMAGES_USE_EXT4 := true
-
-TARGET_OTA_ASSERT_DEVICE := aries,galaxys,GT-I9000,GT-I9000M,GT-I9000T

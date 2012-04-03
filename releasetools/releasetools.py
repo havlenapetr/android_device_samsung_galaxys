@@ -20,6 +20,9 @@ import os
 import common
 
 def FullOTA_Assertions(info):
+  devices = ["aries", "galaxys", "GT-I9000", "GT-I9000M", "GT-I9000T"]
+  info.script.AssertDevices(devices)
+
   info.script.Print("Extracting utilities...")
   info.script.UnpackPackageDir("firmware", "/tmp")
   info.script.SetPermissions("/tmp/modem.bin", 0, 0, 0644)
@@ -28,6 +31,9 @@ def FullOTA_Assertions(info):
   info.script.SetPermissions("/tmp/bml_over_mtd", 0, 0, 0755)
   info.script.SetPermissions("/tmp/bml_over_mtd.sh", 0, 0, 0755)
   return True
+
+def FullOTA_GetMkbootimg(info):
+  return "device/samsung/galaxys/releasetools/mksecbootimg.py"
 
 def FullOTA_WriteBootimg(info):
   out_path = os.getenv('OUT')

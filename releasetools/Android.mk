@@ -17,9 +17,6 @@ ifneq ($(filter galaxys,$(TARGET_DEVICE)),)
 
 LOCAL_PATH:= $(call my-dir)
 
-# Releasetools
-TARGET_RELEASETOOLS_EXTENSIONS := $(LOCAL_PATH)
-
 include $(CLEAR_VARS)
 LOCAL_MODULE := modem.bin
 LOCAL_MODULE_TAGS := eng
