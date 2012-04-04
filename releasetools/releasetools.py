@@ -30,9 +30,6 @@ def FullOTA_Assertions(info):
   info.script.SetPermissions("/tmp/bml_over_mtd", 0, 0, 0755)
   return True
 
-def FullOTA_GetMkbootimg(info):
-  return "device/samsung/galaxys/releasetools/mksecbootimg.py"
-
 def FullOTA_WriteBootimg(info):
   out_path = os.getenv('OUT')
   utils_dir = os.path.join(out_path, 'utilities')
