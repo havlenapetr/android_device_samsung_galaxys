@@ -1,7 +1,7 @@
 # mount point	fstype		device
 
-/recovery	mtd		recovery
-/boot		mtd		boot
+/recovery	bml2mtd		recovery
+/boot		bml2mtd		boot
 /radio		mtd		radio
 /efs		mtd		efs
 
