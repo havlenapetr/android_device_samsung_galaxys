@@ -1,3 +1,4 @@
+# compiled by havlenapetr
 # usb support
 import init.aries.usb.rc
 

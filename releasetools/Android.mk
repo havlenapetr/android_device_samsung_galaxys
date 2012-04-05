@@ -25,12 +25,4 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)/firmware
 LOCAL_SRC_FILES := ../../../../vendor/samsung/$(TARGET_DEVICE)/proprietary/modem.bin
 include $(BUILD_PREBUILT)
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := bml_over_mtd
-LOCAL_MODULE_TAGS := eng
-LOCAL_MODULE_CLASS := EXECUTABLES
-LOCAL_MODULE_PATH := $(PRODUCT_OUT)/utilities
-LOCAL_SRC_FILES := bml_over_mtd
-include $(BUILD_PREBUILT)
-
 endif
