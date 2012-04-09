@@ -1509,6 +1509,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             mParameters.set(SecCameraParameters::KEY_FOCUS_DISTANCES,
                             BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR);
         }
+        else if (!strcmp(new_focus_mode_str,
+                         SecCameraParameters::FOCUS_MODE_INFINITY)) {
+            new_focus_mode = FOCUS_MODE_INFINITY;
+            mParameters.set(SecCameraParameters::KEY_FOCUS_DISTANCES,
+                            BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR);
+        }
         else {
             LOGE("%s::unmatched focus_mode(%s)", __func__, new_focus_mode_str);
             ret = UNKNOWN_ERROR;
