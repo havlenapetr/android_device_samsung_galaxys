@@ -36,7 +36,7 @@ TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
 
 # Releasetools
-TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/galaxys/releasetools
+TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/galaxys
 
 TARGET_BOARD_PLATFORM := s5pc110
 TARGET_BOOTLOADER_BOARD_NAME := aries

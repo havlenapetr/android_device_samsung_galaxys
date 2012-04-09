@@ -13,16 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifneq ($(filter galaxys,$(TARGET_DEVICE)),)
+"""Emit commands needed for Galaxys during OTA installation
+(installing boot image and modem firmware)."""
 
-LOCAL_PATH:= $(call my-dir)
+import os
+import common
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := modem.bin
-LOCAL_MODULE_TAGS := eng
-LOCAL_MODULE_CLASS := EXECUTABLES
-LOCAL_MODULE_PATH := $(PRODUCT_OUT)/firmware
-LOCAL_SRC_FILES := ../../../../vendor/samsung/$(TARGET_DEVICE)/proprietary/modem.bin
-include $(BUILD_PREBUILT)
+def FullOTA_Assertions(info):
+  devices = ["aries", "galaxys", "GT-I9000", "GT-I9000M", "GT-I9000T"]
+  info.script.AssertDevices(devices)
 
-endif
+  info.script.UnpackPackageDir("firmware", "/tmp")
+  info.script.SetPermissions("/tmp/modem.bin", 0, 0, 0644)
+  return True
+
+def FullOTA_WriteBootimg(info):
+  out_path = os.getenv('OUT')
+
+  info.output_zip.write(os.path.join(out_path, "modem.bin"), "firmware/modem.bin")
+
+  # write boot.img with start_block
+  info.script.WriteRawImage("/boot", "boot.img", 72)
+  return True
