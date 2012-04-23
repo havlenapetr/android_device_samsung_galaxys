@@ -52,8 +52,6 @@ PRODUCT_COPY_FILES += \
         device/samsung/galaxys/init.aries.rc:root/init.aries.rc \
         device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
         device/samsung/galaxys/recovery.rc:root/recovery.rc \
-        device/samsung/galaxys/lpm.rc:root/lpm.rc \
-        device/samsung/galaxys/fota.rc:root/fota.rc \
         device/samsung/galaxys/redbend_ua:root/sbin/redbend_ua
 
 # Recovery images and keys
