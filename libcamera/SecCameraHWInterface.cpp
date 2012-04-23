@@ -204,6 +204,10 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES, "30");
         p.setPreviewFrameRate(30);
     } else {
+        p.set(CameraParameters::KEY_SUPPORTED_FOCUS_MODES,
+              CameraParameters::FOCUS_MODE_AUTO);
+        p.set(CameraParameters::KEY_FOCUS_MODE,
+              CameraParameters::FOCUS_MODE_AUTO);
         p.set(SecCameraParameters::KEY_FOCUS_DISTANCES,
               FRONT_CAMERA_FOCUS_DISTANCES_STR);
         p.set(SecCameraParameters::KEY_SUPPORTED_JPEG_THUMBNAIL_SIZES,
@@ -345,8 +349,8 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     ip.set("wdr", 0);
     ip.set("chk_dataline", 0);
     if (cameraId == SecCamera::CAMERA_ID_FRONT) {
-        ip.set("vtmode", 1);
-        ip.set("blur", 1);
+        ip.set("vtmode", 0);
+        ip.set("blur", 0);
     }
 
     p.set(SecCameraParameters::KEY_HORIZONTAL_VIEW_ANGLE, "51.2");
