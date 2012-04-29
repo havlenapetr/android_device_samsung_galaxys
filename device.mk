@@ -117,6 +117,10 @@ PRODUCT_PACKAGES += \
 	libcamera \
 	libstagefrighthw
 
+# Our device specs
+PRODUCT_PACKAGES += \
+        AriesParts
+
 # apns config file
 PRODUCT_COPY_FILES += \
         device/samsung/galaxys/apns-conf.xml:system/etc/apns-conf.xml

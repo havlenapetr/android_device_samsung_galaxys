@@ -1,0 +1,71 @@
+package com.android.settings.device;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+
+public class Utils {
+
+    /**
+     * Read a string value to the specified file.
+     * @param filename      The filename
+     * @return              The value
+     */
+    public static String readValue(String filename) {
+        StringBuffer result = new StringBuffer("");
+        try {
+            FileInputStream fis = new FileInputStream(new File(filename));
+
+            int ch;
+            while((ch = fis.read()) != -1) {
+                result.append((char) ch);
+            }
+            fis.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result.toString();
+    }
+
+    /**
+     * Write a string value to the specified file.
+     * @param filename      The filename
+     * @param value         The value
+     */
+    public static void writeValue(String filename, String value) {
+        try {
+            FileOutputStream fos = new FileOutputStream(new File(filename));
+            fos.write(value.getBytes());
+            fos.flush();
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Write the "color value" to the specified file. The value is scaled from
+     * an integer to an unsigned integer by multiplying by 2.
+     * @param filename      The filename
+     * @param value         The value of max value Integer.MAX
+     */
+    public static void writeColor(String filename, int value) {
+        writeValue(filename, String.valueOf((long) value * 2));
+    }
+
+    /**
+     * Check if the specified file exists.
+     * @param filename      The filename
+     * @return              Whether the file exists or not
+     */
+    public static boolean fileExists(String filename) {
+        return new File(filename).exists();
+    }
+
+}
