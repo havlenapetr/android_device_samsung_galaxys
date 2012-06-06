@@ -19,6 +19,8 @@
 
 namespace android {
 
+const char SecCameraParameters::FOCUS_MODE_FACEDETECT[] = "facedetect";
+
 const char SecCameraParameters::KEY_ISO[] = "iso";
 const char SecCameraParameters::KEY_SUPPORTED_ISO_MODES[] = "iso-values";
 
