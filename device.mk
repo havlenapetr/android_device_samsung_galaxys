@@ -152,9 +152,9 @@ endif
 PRODUCT_PACKAGES += \
     com.android.future.usb.accessory
 
-# Usb accessory
+# Our specs
 PRODUCT_PACKAGES += \
-    com.android.future.usb.accessory
+    AriesParts
 
 # apns config file
 PRODUCT_COPY_FILES += \
