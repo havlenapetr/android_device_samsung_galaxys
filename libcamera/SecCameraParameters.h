@@ -92,8 +92,6 @@ public:
      SecCameraParameters();
      SecCameraParameters(const String8 &params);
 
-     static const char FOCUS_MODE_FACEDETECT[];
-
      static const char KEY_ISO[];
      static const char KEY_SUPPORTED_ISO_MODES[];
 

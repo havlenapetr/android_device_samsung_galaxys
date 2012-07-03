@@ -192,11 +192,9 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     if (cameraId == SecCamera::CAMERA_ID_BACK) {
         parameterString = SecCameraParameters::FOCUS_MODE_AUTO;
         parameterString.append(",");
-		parameterString.append(CameraParameters::FOCUS_MODE_INFINITY);
+        parameterString.append(CameraParameters::FOCUS_MODE_INFINITY);
         parameterString.append(",");
         parameterString.append(SecCameraParameters::FOCUS_MODE_MACRO);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::FOCUS_MODE_FACEDETECT);
         p.set(SecCameraParameters::KEY_SUPPORTED_FOCUS_MODES,
               parameterString.string());
         p.set(SecCameraParameters::KEY_FOCUS_MODE,
@@ -316,6 +314,12 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_MAX_ZOOM, "12");
         p.set(SecCameraParameters::KEY_ZOOM_RATIOS, "100,125,150,175,200,225,250,275,300,325,350,375,400");
         p.set(SecCameraParameters::KEY_ZOOM_SUPPORTED, SecCameraParameters::TRUE);
+
+        /* signal that we have face detection in back camera
+         * TODO: findout how much faces ce147 can detect
+         */
+        p.set(SecCameraParameters::KEY_MAX_NUM_DETECTED_FACES_HW, 5);
+        p.set(SecCameraParameters::KEY_MAX_NUM_DETECTED_FACES_SW, 0);
 
         /* we have two ranges, 4-30fps for night mode and
          * 15-30fps for all others
@@ -592,11 +596,11 @@ int CameraHardwareSec::previewThread()
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
     offset = frame_size * index;
 
-	// draw new frame into window
+    // draw new frame into window
     if(mWindow && mGrallocHal) {
         buffer_handle_t *buf_handle;
         int stride;
-		int ret;
+        int ret;
 
         if (0 != (ret = mWindow->dequeue_buffer(mWindow, &buf_handle, &stride))) {
             LOGE("%s: Could not dequeue gralloc buffer: %i!", __func__, ret);
@@ -637,19 +641,19 @@ int CameraHardwareSec::previewThread()
                             ptr += stride / 2;
                             src += width / 2;
                         }
-		            }      
+                    }
                 }
-            
+
                 mGrallocHal->unlock(mGrallocHal, *buf_handle);
             } else {
                 LOGE("%s: Could not obtain gralloc buffer", __func__);
-		    }
+            }
 
             if (0 != (ret = mWindow->enqueue_buffer(mWindow, buf_handle))) {
                 LOGE("%s: Could not enqueue gralloc buffer: %i!", __func__, ret);
             }
         }
-	}
+    }
 
     // Notify the client of a new frame.
     if (mMsgEnabled & CAMERA_MSG_PREVIEW_FRAME) {
@@ -1517,29 +1521,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             mParameters.set(SecCameraParameters::KEY_FOCUS_DISTANCES,
                             BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR);
         }
-		else if (!strcmp(new_focus_mode_str,
-                         SecCameraParameters::FOCUS_MODE_FACEDETECT)) {
-            // Enable face detect here, SecCamera will take care of the rest
-			if (mSecCamera->setFaceDetect(FACE_DETECTION_ON) < 0) {
-                LOGE("%s::mSecCamera->setFaceDetect(%d) fail", __func__, FACE_DETECTION_ON);
-				ret = UNKNOWN_ERROR;
-            } else {
-                mParameters.set(CameraParameters::KEY_FOCUS_MODE, new_focus_mode_str);
-                mParameters.set(CameraParameters::KEY_FOCUS_DISTANCES,
-                        BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR);
-			}
-		}
         else {
             LOGE("%s::unmatched focus_mode(%s)", __func__, new_focus_mode_str);
             ret = UNKNOWN_ERROR;
         }
 
         if (0 <= new_focus_mode) {
-            // Disable face-detect
-            if (mSecCamera->setFaceDetect(FACE_DETECTION_OFF) < 0) {
-                LOGE("%s::mSecCamera->setFaceDetect(%d) fail", __func__, FACE_DETECTION_OFF);
-                ret = UNKNOWN_ERROR;
-            }
             if (mSecCamera->setFocusMode(new_focus_mode) < 0) {
                 LOGE("%s::mSecCamera->setFocusMode(%d) fail", __func__, new_focus_mode);
                 ret = UNKNOWN_ERROR;
@@ -1941,6 +1928,28 @@ char* CameraHardwareSec::getParameters() const
 
 status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t arg2)
 {
+    if(!mSecCamera) {
+        LOGE("SecCamera instance isn't created");
+        return INVALID_OPERATION;
+    }
+
+    if(!previewEnabled()) {
+        LOGE("Preview is not running");
+        return INVALID_OPERATION;
+    }
+
+    switch(command) {
+        case CAMERA_CMD_START_FACE_DETECTION:
+            return mSecCamera->setFaceDetect(FACE_DETECTION_ON) < 0 ? UNKNOWN_ERROR : NO_ERROR;
+
+        case CAMERA_CMD_STOP_FACE_DETECTION:
+            return mSecCamera->setFaceDetect(FACE_DETECTION_OFF) < 0 ? UNKNOWN_ERROR : NO_ERROR;
+
+        default:
+            LOGE("Command [%i] isn't supported", command);
+            break;
+    }
+
     return BAD_VALUE;
 }
 
