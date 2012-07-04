@@ -336,7 +336,6 @@ int camera_device_close(hw_device_t* device)
 
     LOGV("%s", __FUNCTION__);
 
-    int                 ret = -EINVAL;
     sec_camera_device*  sec_dev;
 
     if(!device) {
@@ -362,7 +361,7 @@ done:
 #ifdef HEAPTRACKER
     heaptracker_free_leaked_memory();
 #endif
-    return ret;
+    return 0;
 }
 
 /*******************************************************************
