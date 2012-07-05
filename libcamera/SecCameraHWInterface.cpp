@@ -63,6 +63,7 @@ gralloc_module_t const* CameraHardwareSec::mGrallocHal = NULL;
 CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
           mCaptureInProgress(false),
+          mFaceDetectStarted(false),
           mParameters(),
           mPreviewMemory(0),
           mRawHeap(0),
@@ -70,6 +71,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mSecCamera(NULL),
           mCameraSensorName(NULL),
           mSkipFrame(0),
+          mWindow(NULL),
           mNotifyCb(0),
           mDataCb(0),
           mDataCbTimestamp(0),
@@ -78,8 +80,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
           mRecordRunning(false),
           mPostViewWidth(0),
           mPostViewHeight(0),
-          mPostViewSize(0),
-          mWindow(NULL)
+          mPostViewSize(0)
 {
     int ret;
 
@@ -784,6 +785,28 @@ void CameraHardwareSec::stopPreview()
     stopPreview_l();
 }
 
+status_t CameraHardwareSec::startFaceDetection()
+{
+    if (mFaceDetectStarted) {
+        LOGD("%s : face detection already running", __func__);
+        return NO_ERROR;
+    }
+
+    mFaceDetectStarted = mSecCamera->setFaceDetect(FACE_DETECTION_ON) >= 0;
+    return mFaceDetectStarted ? NO_ERROR : UNKNOWN_ERROR;
+}
+
+status_t CameraHardwareSec::stopFaceDetection()
+{
+    if (!mFaceDetectStarted) {
+        LOGD("%s : face detection isn't running", __func__);
+        return NO_ERROR;
+    }
+
+    mFaceDetectStarted = !(mSecCamera->setFaceDetect(FACE_DETECTION_OFF) >= 0);
+    return !mFaceDetectStarted ? NO_ERROR : UNKNOWN_ERROR;
+}
+
 void CameraHardwareSec::stopPreview_l()
 {
     LOGV("%s - start", __func__);
@@ -791,6 +814,13 @@ void CameraHardwareSec::stopPreview_l()
     if (!mPreviewRunning) {
         LOGD("%s : preview not running, doing nothing", __func__);
         return;
+    }
+
+    /* if face detect is running we must stop it and than app
+     * must reenable face detection
+     */
+    if(mFaceDetectStarted) {
+        stopFaceDetection();
     }
 
     mPreviewRunning = false;
@@ -1940,10 +1970,10 @@ status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t a
 
     switch(command) {
         case CAMERA_CMD_START_FACE_DETECTION:
-            return mSecCamera->setFaceDetect(FACE_DETECTION_ON) < 0 ? UNKNOWN_ERROR : NO_ERROR;
+            return startFaceDetection();
 
         case CAMERA_CMD_STOP_FACE_DETECTION:
-            return mSecCamera->setFaceDetect(FACE_DETECTION_OFF) < 0 ? UNKNOWN_ERROR : NO_ERROR;
+            return stopFaceDetection();
 
         default:
             LOGE("Command [%i] isn't supported", command);

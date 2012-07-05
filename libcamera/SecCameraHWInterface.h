@@ -58,6 +58,9 @@ public:
     bool        recordingEnabled();
     void        releaseRecordingFrame(const void *opaque);
 
+    status_t    startFaceDetection();
+    status_t    stopFaceDetection();
+
     status_t    init();
     status_t    autoFocus();
     status_t    cancelAutoFocus();
@@ -150,6 +153,7 @@ private:
     bool                mPreviewRunning;
     bool                mPreviewStartDeferred;
     bool                mExitPreviewThread;
+    bool                mFaceDetectStarted;
 
     /* used to guard threading state */
     mutable Mutex       mStateLock;
