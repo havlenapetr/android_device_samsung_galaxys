@@ -144,16 +144,16 @@ private:
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
-    bool                mExitAutoFocusThread;
+    volatile bool       mExitAutoFocusThread;
 
     /* used by preview thread to block until it's told to run */
     mutable Mutex       mPreviewLock;
     mutable Condition   mPreviewCondition;
     mutable Condition   mPreviewStoppedCondition;
-    bool                mPreviewRunning;
-    bool                mPreviewStartDeferred;
-    bool                mExitPreviewThread;
-    bool                mFaceDetectStarted;
+    volatile bool       mPreviewRunning;
+    volatile bool       mPreviewStartDeferred;
+    volatile bool       mExitPreviewThread;
+    volatile bool       mFaceDetectStarted;
 
     /* used to guard threading state */
     mutable Mutex       mStateLock;
@@ -181,7 +181,7 @@ private:
 
     int32_t             mMsgEnabled;
 
-    bool                mRecordRunning;
+    volatile bool       mRecordRunning;
     mutable Mutex       mRecordLock;
     int                 mPostViewWidth;
     int                 mPostViewHeight;

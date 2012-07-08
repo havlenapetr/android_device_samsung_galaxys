@@ -884,6 +884,7 @@ bool CameraHardwareSec::recordingEnabled()
 {
     LOGV("%s :", __func__);
 
+    Mutex::Autolock lock(mRecordLock);
     return mRecordRunning;
 }
 
