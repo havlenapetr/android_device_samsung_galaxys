@@ -63,6 +63,14 @@ adb pull /system/firmware/CE147F00.bin ../../../vendor/$MANUFACTURER/$DEVICE/pro
 adb pull /system/firmware/CE147F01.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/firmware/CE147F02.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 adb pull /system/firmware/CE147F03.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/libtvout.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/libtvout_jni.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/libtvoutfimc.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/libtvouthdmi.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/libtvoutservice.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/lib/lib_tvoutengine.so ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+adb pull /vendor/bin/tvoutserver ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
+
 
 (cat << EOF) | sed s/__DEVICE__/$DEVICE/g | sed s/__MANUFACTURER__/$MANUFACTURER/g > ../../../vendor/$MANUFACTURER/$DEVICE/device-vendor-blobs.mk
 # Copyright (C) 2010 The Android Open Source Project
@@ -128,7 +136,14 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F00.bin:system/firmware/CE147F00.bin \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F01.bin:system/firmware/CE147F01.bin \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F02.bin:system/firmware/CE147F02.bin \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F03.bin:system/firmware/CE147F03.bin
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/CE147F03.bin:system/firmware/CE147F03.bin \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvout.so:system/vendor/lib/libtvout.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvout_jni.so:system/vendor/lib/libtvout_jni.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvoutfimc.so:system/vendor/lib/libtvoutfimc.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvouthdmi.so:system/vendor/lib/libtvouthdmi.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/libtvoutservice.so:system/vendor/lib/libtvoutservice.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/lib_tvoutengine.so:system/vendor/lib/lib_tvoutengine.so \\
+    vendor/__MANUFACTURER__/__DEVICE__/proprietary/tvoutserver:system/vendor/bin/tvoutserver
 
 EOF
 

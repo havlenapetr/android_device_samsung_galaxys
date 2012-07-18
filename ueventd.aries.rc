@@ -25,20 +25,25 @@
 # for GPS
 /dev/s3c2410_serial1      0600   gps        gps
 
-#for vibrator
+# for vibrator
 /dev/tspdrv		  0660	 shell	    shell
 
-#for PMEM_adsp
+# for PMEM_adsp
 /dev/pmem_adsp		  0660	 system	    audio 
 
-#for PMEM 
+# for PMEM 
 /dev/pmem                 0660   system     system
 
 # for ULP Audio
 /dev/s5p-rp               0660   system     audio
 /dev/s5p-rp_ctrl          0660   system     audio
 
-#for storage 
+# for TV Out
+/dev/video14              0660   system     graphics
+/dev/video21              0660   system     graphics
+/dev/video22              0660   system     graphics
+
+# for storage 
 /dev/storage              0650   radio      radio
 
 # for FM Radio
