@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <media/stagefright/MetadataBufferType.h>
+#include <MetadataBufferType.h>
 
 #define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
 #define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
@@ -84,22 +84,22 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
 {
     int ret;
 
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
     mSecCamera = SecCamera::createInstance();
     if (mSecCamera == NULL) {
-        LOGE("ERR(%s):Fail on mSecCamera object creation", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera object creation", __func__);
         return;
     }
     
     if (!mGrallocHal) {
         ret = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **)&mGrallocHal);
         if (ret)
-            LOGE("ERR(%s):Fail on loading gralloc HAL", __func__);
+            ALOGE("ERR(%s):Fail on loading gralloc HAL", __func__);
     }
 
     ret = mSecCamera->initCamera(cameraId);
     if (ret < 0) {
-        LOGE("ERR(%s):Fail on mSecCamera init", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera init", __func__);
         return;
     }
 }
@@ -107,12 +107,12 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
 status_t CameraHardwareSec::init()
 {
     if (mSecCamera->flagCreate() == 0) {
-        LOGE("ERR(%s):Fail on mSecCamera->flagCreate()", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera->flagCreate()", __func__);
         return UNKNOWN_ERROR;
     }
     
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    LOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
+    ALOGV("mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
          mPostViewWidth,mPostViewHeight,mPostViewSize);
     
     initDefaultParameters(mSecCamera->getCameraId());
@@ -133,7 +133,7 @@ status_t CameraHardwareSec::init()
 void CameraHardwareSec::initDefaultParameters(int cameraId)
 {
     if (mSecCamera == NULL) {
-        LOGE("ERR(%s):mSecCamera object is NULL", __func__);
+        ALOGE("ERR(%s):mSecCamera object is NULL", __func__);
         return;
     }
 
@@ -141,7 +141,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
     SecCameraParameters ip;
 
     mCameraSensorName = mSecCamera->getCameraSensorName();
-    LOGV("CameraSensorName: %s", mCameraSensorName);
+    ALOGV("CameraSensorName: %s", mCameraSensorName);
 
     int preview_max_width   = 0;
     int preview_max_height  = 0;
@@ -405,7 +405,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
 CameraHardwareSec::~CameraHardwareSec()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     release();
 }
@@ -415,34 +415,34 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
 {
     int min_bufs;
 
-    LOGV("%s: mWindow %p", __func__, mWindow);
+    ALOGV("%s: mWindow %p", __func__, mWindow);
 
     Mutex::Autolock lock(mPreviewLock);
 
     mWindow = window;
     if (!window) {
-        LOGE("preview window is NULL!");
+        ALOGE("preview window is NULL!");
         return OK;
     }
 
     if (mPreviewRunning && !mPreviewStartDeferred) {
-        LOGI("stop preview (window change)");
+        ALOGI("stop preview (window change)");
         stopPreview_l();
     }
 
     if (window->get_min_undequeued_buffer_count(window, &min_bufs)) {
-        LOGE("%s: could not retrieve min undequeued buffer count", __func__);
+        ALOGE("%s: could not retrieve min undequeued buffer count", __func__);
         return INVALID_OPERATION;
     }
 
     if (min_bufs >= kBufferCount) {
-        LOGE("%s: min undequeued buffer count %d is too high (expecting at most %d)", __func__,
+        ALOGE("%s: min undequeued buffer count %d is too high (expecting at most %d)", __func__,
              min_bufs, kBufferCount - 1);
     }
     
-    LOGV("%s: setting buffer count to %d", __func__, kBufferCount);
+    ALOGV("%s: setting buffer count to %d", __func__, kBufferCount);
     if (window->set_buffer_count(window, kBufferCount)) {
-        LOGE("%s: could not set buffer count", __func__);
+        ALOGE("%s: could not set buffer count", __func__);
         return INVALID_OPERATION;
     }
     
@@ -452,17 +452,17 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
     int hal_pixel_format = HAL_PIXEL_FORMAT_YV12;
     
     const char *str_preview_format = mParameters.getPreviewFormat();
-    LOGV("%s: preview format %s", __func__, str_preview_format);
+    ALOGV("%s: preview format %s", __func__, str_preview_format);
     
     if (window->set_usage(window, GRALLOC_USAGE_SW_WRITE_OFTEN)) {
-        LOGE("%s: could not set usage on gralloc buffer", __func__);
+        ALOGE("%s: could not set usage on gralloc buffer", __func__);
         return INVALID_OPERATION;
     }
     
     if (window->set_buffers_geometry(window,
                                 preview_width, preview_height,
                                 hal_pixel_format)) {
-        LOGE("%s: could not set buffers geometry to %s",
+        ALOGE("%s: could not set buffers geometry to %s",
              __func__, str_preview_format);
         return INVALID_OPERATION;
     }
@@ -471,7 +471,7 @@ status_t CameraHardwareSec::setPreviewWindow(struct preview_stream_ops *window)
     if(mPreviewRunning && mPreviewStartDeferred) {
         int ret = startPreview_l();
         if (ret < 0) {
-            LOGE("ERR(%s):Fail on startPreview_l", __func__);
+            ALOGE("ERR(%s):Fail on startPreview_l", __func__);
             return UNKNOWN_ERROR;
         } else {
             mPreviewStartDeferred = false;
@@ -488,7 +488,7 @@ status_t CameraHardwareSec::storeMetaDataInBuffers(bool enable)
     // metadata buffer mode can be turned on or off.
     // Samsung needs to fix this.
     if (!enable) {
-        LOGE("Non-metadata buffer mode is not supported!");
+        ALOGE("Non-metadata buffer mode is not supported!");
         return INVALID_OPERATION;
     }
     return OK;
@@ -509,18 +509,18 @@ void CameraHardwareSec::setCallbacks(camera_notify_callback notify_cb,
 
 void CameraHardwareSec::enableMsgType(int32_t msgType)
 {
-    LOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
+    ALOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
          __func__, msgType, mMsgEnabled);
     mMsgEnabled |= msgType;
-    LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+    ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
 }
 
 void CameraHardwareSec::disableMsgType(int32_t msgType)
 {
-    LOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
+    ALOGV("%s : msgType = 0x%x, mMsgEnabled before = 0x%x",
          __func__, msgType, mMsgEnabled);
     mMsgEnabled &= ~msgType;
-    LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+    ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
 }
 
 bool CameraHardwareSec::msgTypeEnabled(int32_t msgType)
@@ -540,21 +540,21 @@ void CameraHardwareSec::setSkipFrame(int frame)
 
 int CameraHardwareSec::previewThreadWrapper()
 {
-    LOGI("%s: starting", __func__);
+    ALOGI("%s: starting", __func__);
     while (1) {
         mPreviewLock.lock();
         while (!mPreviewRunning) {
-            LOGV("%s: calling mSecCamera->stopPreview() and waiting", __func__);
+            ALOGV("%s: calling mSecCamera->stopPreview() and waiting", __func__);
             mSecCamera->stopPreview();
             /* signal that we're stopping */
             mPreviewStoppedCondition.signal();
             mPreviewCondition.wait(mPreviewLock);
-            LOGV("%s: return from wait", __func__);
+            ALOGV("%s: return from wait", __func__);
         }
         mPreviewLock.unlock();
 
         if (mExitPreviewThread) {
-            LOGV("%s: exiting", __func__);
+            ALOGV("%s: exiting", __func__);
             mSecCamera->stopPreview();
             return 0;
         }
@@ -573,7 +573,7 @@ int CameraHardwareSec::previewThread()
 
     index = mSecCamera->getPreview();
     if (index < 0) {
-        LOGE("ERR(%s):Fail on SecCamera->getPreview()", __func__);
+        ALOGE("ERR(%s):Fail on SecCamera->getPreview()", __func__);
         return UNKNOWN_ERROR;
     }
     mSkipFrameLock.lock();
@@ -589,7 +589,7 @@ int CameraHardwareSec::previewThread()
     phyYAddr = mSecCamera->getPhyAddrY(index);
     phyCAddr = mSecCamera->getPhyAddrC(index);
     if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
-        LOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x",
+        ALOGE("ERR(%s):Fail on SecCamera getPhyAddr Y addr = %0x C addr = %0x",
              __func__, phyYAddr, phyCAddr);
         return UNKNOWN_ERROR;
     }
@@ -604,7 +604,7 @@ int CameraHardwareSec::previewThread()
         int ret;
 
         if (0 != (ret = mWindow->dequeue_buffer(mWindow, &buf_handle, &stride))) {
-            LOGE("%s: Could not dequeue gralloc buffer: %i!", __func__, ret);
+            ALOGE("%s: Could not dequeue gralloc buffer: %i!", __func__, ret);
         } else {
             void *vaddr;
             if (!mGrallocHal->lock(mGrallocHal,
@@ -647,11 +647,11 @@ int CameraHardwareSec::previewThread()
 
                 mGrallocHal->unlock(mGrallocHal, *buf_handle);
             } else {
-                LOGE("%s: Could not obtain gralloc buffer", __func__);
+                ALOGE("%s: Could not obtain gralloc buffer", __func__);
             }
 
             if (0 != (ret = mWindow->enqueue_buffer(mWindow, buf_handle))) {
-                LOGE("%s: Could not enqueue gralloc buffer: %i!", __func__, ret);
+                ALOGE("%s: Could not enqueue gralloc buffer: %i!", __func__, ret);
             }
         }
     }
@@ -682,14 +682,14 @@ int CameraHardwareSec::previewThread()
     if (mRecordRunning == true) {
         index = mSecCamera->getRecordFrame();
         if (index < 0) {
-            LOGE("ERR(%s):Fail on SecCamera->getRecord()", __func__);
+            ALOGE("ERR(%s):Fail on SecCamera->getRecord()", __func__);
             return UNKNOWN_ERROR;
         }
 
         phyYAddr = mSecCamera->getRecPhyAddrY(index);
         phyCAddr = mSecCamera->getRecPhyAddrC(index);
         if (phyYAddr == 0xffffffff || phyCAddr == 0xffffffff) {
-            LOGE("ERR(%s):Fail on SecCamera getRectPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
+            ALOGE("ERR(%s):Fail on SecCamera getRectPhyAddr Y addr = %0x C addr = %0x", __func__, phyYAddr, phyCAddr);
             return UNKNOWN_ERROR;
         }
 
@@ -713,17 +713,17 @@ int CameraHardwareSec::previewThread()
 
 status_t CameraHardwareSec::startPreview()
 {
-    LOGV("%s - start", __func__);
+    ALOGV("%s - start", __func__);
 
     Mutex::Autolock lock(mStateLock);
     if (mCaptureInProgress) {
-        LOGE("%s : capture in progress, not allowed", __func__);
+        ALOGE("%s : capture in progress, not allowed", __func__);
         return INVALID_OPERATION;
     }
 
     Mutex::Autolock previewLock(mPreviewLock);
     if (mPreviewRunning) {
-        LOGE("%s : preview thread already running", __func__);
+        ALOGE("%s : preview thread already running", __func__);
         return INVALID_OPERATION;
     }
 
@@ -750,14 +750,14 @@ status_t CameraHardwareSec::startPreview_l()
 
     ret = mSecCamera->startPreview();
     if (ret < 0) {
-        LOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera->startPreview()", __func__);
         return UNKNOWN_ERROR;
     }
 
     setSkipFrame(INITIAL_SKIP_FRAME);
 
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
-    LOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
+    ALOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
              mSecCamera->getCameraFd(), frame_size * kBufferCount, width, height);
 
     RELEASE_MEMORY_BUFFER(mPreviewMemory);
@@ -766,12 +766,12 @@ status_t CameraHardwareSec::startPreview_l()
                                   kBufferCount,
                                   mCallbackCookie);
     if (!mPreviewMemory) {
-        LOGE("ERR(%s): Preview heap creation fail", __func__);
+        ALOGE("ERR(%s): Preview heap creation fail", __func__);
         return NO_MEMORY;
     }
 
     mSecCamera->getPostViewConfig(&mPostViewWidth, &mPostViewHeight, &mPostViewSize);
-    LOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
+    ALOGV("CameraHardwareSec: mPostViewWidth = %d mPostViewHeight = %d mPostViewSize = %d",
              mPostViewWidth,mPostViewHeight,mPostViewSize);
 
     return OK;
@@ -779,7 +779,7 @@ status_t CameraHardwareSec::startPreview_l()
 
 void CameraHardwareSec::stopPreview()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mPreviewLock);
     stopPreview_l();
@@ -788,7 +788,7 @@ void CameraHardwareSec::stopPreview()
 status_t CameraHardwareSec::startFaceDetection()
 {
     if (mFaceDetectStarted) {
-        LOGD("%s : face detection already running", __func__);
+        ALOGD("%s : face detection already running", __func__);
         return NO_ERROR;
     }
 
@@ -799,7 +799,7 @@ status_t CameraHardwareSec::startFaceDetection()
 status_t CameraHardwareSec::stopFaceDetection()
 {
     if (!mFaceDetectStarted) {
-        LOGD("%s : face detection isn't running", __func__);
+        ALOGD("%s : face detection isn't running", __func__);
         return NO_ERROR;
     }
 
@@ -809,10 +809,10 @@ status_t CameraHardwareSec::stopFaceDetection()
 
 void CameraHardwareSec::stopPreview_l()
 {
-    LOGV("%s - start", __func__);
+    ALOGV("%s - start", __func__);
 
     if (!mPreviewRunning) {
-        LOGD("%s : preview not running, doing nothing", __func__);
+        ALOGD("%s : preview not running, doing nothing", __func__);
         return;
     }
 
@@ -829,14 +829,14 @@ void CameraHardwareSec::stopPreview_l()
         /* wait until preview thread is stopped */
         mPreviewStoppedCondition.wait(mPreviewLock);
     } else {
-        LOGD("%s : preview running but deferred, doing nothing", __func__);
+        ALOGD("%s : preview running but deferred, doing nothing", __func__);
     }
 }
 
 bool CameraHardwareSec::previewEnabled()
 {
     Mutex::Autolock lock(mPreviewLock);
-    LOGV("%s : %d", __func__, mPreviewRunning);
+    ALOGV("%s : %d", __func__, mPreviewRunning);
     return mPreviewRunning;
 }
 
@@ -844,20 +844,20 @@ bool CameraHardwareSec::previewEnabled()
 
 status_t CameraHardwareSec::startRecording()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mRecordLock);
 
     RELEASE_MEMORY_BUFFER(mRecordHeap);
     mRecordHeap = mGetMemoryCb(-1, sizeof(struct addrs), kBufferCount, NULL);
     if (!mRecordHeap) {
-        LOGE("ERR(%s): Record heap creation fail", __func__);
+        ALOGE("ERR(%s): Record heap creation fail", __func__);
         return UNKNOWN_ERROR;
     }
 
     if (mRecordRunning == false) {
         if (mSecCamera->startRecord() < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->startRecord()", __func__);
+            ALOGE("ERR(%s):Fail on mSecCamera->startRecord()", __func__);
             return UNKNOWN_ERROR;
         }
         mRecordRunning = true;
@@ -867,13 +867,13 @@ status_t CameraHardwareSec::startRecording()
 
 void CameraHardwareSec::stopRecording()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mRecordLock);
 
     if (mRecordRunning == true) {
         if (mSecCamera->stopRecord() < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->stopRecord()", __func__);
+            ALOGE("ERR(%s):Fail on mSecCamera->stopRecord()", __func__);
             return;
         }
         mRecordRunning = false;
@@ -882,7 +882,7 @@ void CameraHardwareSec::stopRecording()
 
 bool CameraHardwareSec::recordingEnabled()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     Mutex::Autolock lock(mRecordLock);
     return mRecordRunning;
@@ -901,7 +901,7 @@ int CameraHardwareSec::autoFocusThread()
     int count =0;
     int af_status =0 ;
 
-    LOGV("%s : starting", __func__);
+    ALOGV("%s : starting", __func__);
 
     /* block until we're told to start.  we don't want to use
      * a restartable thread and requestExitAndWait() in cancelAutoFocus()
@@ -913,32 +913,32 @@ int CameraHardwareSec::autoFocusThread()
     /* check early exit request */
     if (mExitAutoFocusThread) {
         mFocusLock.unlock();
-        LOGV("%s : exiting on request0", __func__);
+        ALOGV("%s : exiting on request0", __func__);
         return NO_ERROR;
     }
     mFocusCondition.wait(mFocusLock);
     /* check early exit request */
     if (mExitAutoFocusThread) {
         mFocusLock.unlock();
-        LOGV("%s : exiting on request1", __func__);
+        ALOGV("%s : exiting on request1", __func__);
         return NO_ERROR;
     }
     mFocusLock.unlock();
 
-    LOGV("%s : calling setAutoFocus", __func__);
+    ALOGV("%s : calling setAutoFocus", __func__);
     if (mSecCamera->setAutofocus() < 0) {
-        LOGE("ERR(%s):Fail on mSecCamera->setAutofocus()", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera->setAutofocus()", __func__);
         return UNKNOWN_ERROR;
     }
 
     af_status = mSecCamera->getAutoFocusResult();
 
     if (af_status == 0x01) {
-        LOGV("%s : AF Success!!", __func__);
+        ALOGV("%s : AF Success!!", __func__);
         if (mMsgEnabled & CAMERA_MSG_FOCUS)
             mNotifyCb(CAMERA_MSG_FOCUS, true, 0, mCallbackCookie);
     } else if (af_status == 0x02) {
-        LOGV("%s : AF Cancelled !!", __func__);
+        ALOGV("%s : AF Cancelled !!", __func__);
         if (mMsgEnabled & CAMERA_MSG_FOCUS) {
             /* CAMERA_MSG_FOCUS only takes a bool.  true for
              * finished and false for failure.  cancel is still
@@ -947,19 +947,19 @@ int CameraHardwareSec::autoFocusThread()
             mNotifyCb(CAMERA_MSG_FOCUS, true, 0, mCallbackCookie);
         }
     } else {
-        LOGV("%s : AF Fail !!", __func__);
-        LOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
+        ALOGV("%s : AF Fail !!", __func__);
+        ALOGV("%s : mMsgEnabled = 0x%x", __func__, mMsgEnabled);
         if (mMsgEnabled & CAMERA_MSG_FOCUS)
             mNotifyCb(CAMERA_MSG_FOCUS, false, 0, mCallbackCookie);
     }
 
-    LOGV("%s : exiting with no error", __func__);
+    ALOGV("%s : exiting with no error", __func__);
     return NO_ERROR;
 }
 
 status_t CameraHardwareSec::autoFocus()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
     /* signal autoFocusThread to run once */
     mFocusCondition.signal();
     return NO_ERROR;
@@ -968,10 +968,10 @@ status_t CameraHardwareSec::autoFocus()
 /* 2009.10.14 by icarus for added interface */
 status_t CameraHardwareSec::cancelAutoFocus()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     if (mSecCamera->cancelAutofocus() < 0) {
-        LOGE("ERR(%s):Fail on mSecCamera->cancelAutofocus()", __func__);
+        ALOGE("ERR(%s):Fail on mSecCamera->cancelAutofocus()", __func__);
         return UNKNOWN_ERROR;
     }
 
@@ -986,7 +986,7 @@ bool CameraHardwareSec::scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_
     int32_t x, y, src_y_start_pos, dst_pos, src_pos;
 
     if (dstWidth % 2 != 0 || dstHeight % 2 != 0){
-        LOGE("scale_down_yuv422: invalid width, height for scaling");
+        ALOGE("scale_down_yuv422: invalid width, height for scaling");
         return false;
     }
 
@@ -1012,7 +1012,7 @@ bool CameraHardwareSec::scaleDownYuv422(char *srcBuf, uint32_t srcWidth, uint32_
 
 int CameraHardwareSec::pictureThread()
 {
-    LOGV("%s - start", __FUNCTION__);
+    ALOGV("%s - start", __FUNCTION__);
 
     int             ret = NO_ERROR;
     int             pictureWidth  = 0;
@@ -1046,19 +1046,19 @@ int CameraHardwareSec::pictureThread()
     if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         ret = mSecCamera->setSnapshotCmd();
         if(ret < 0) {
-            LOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
+            ALOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
             goto out;
         }
         
         jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
         if(jpegData == NULL) {
-            LOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
+            ALOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
             picturePhyAddr = 0;
             ret = UNKNOWN_ERROR;
             goto out;
         }
 
-        LOGV("jpegSize(%i), picturePhyAddr(%i)", jpegSize, picturePhyAddr);
+        ALOGV("jpegSize(%i), picturePhyAddr(%i)", jpegSize, picturePhyAddr);
     } else {
         jpegHeap = new MemoryHeapBase(frameSize);
         postviewHeap = new MemoryHeapBase(postViewSize);
@@ -1066,13 +1066,13 @@ int CameraHardwareSec::pictureThread()
 
         if (mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
                                            (unsigned char*)jpegHeap->base(), &jpegSize) < 0) {
-            LOGE("ERR(%s):Fail on SecCamera->getSnapshotAndJpeg()", __FUNCTION__);
+            ALOGE("ERR(%s):Fail on SecCamera->getSnapshotAndJpeg()", __FUNCTION__);
             goto out;
         }
 
         if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
                             (char *)thumbnailHeap->base(), thumbWidth, thumbHeight)) {
-            LOGE("ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
+            ALOGE("ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
             goto out;
         }
     }
@@ -1109,7 +1109,7 @@ int CameraHardwareSec::pictureThread()
                     (unsigned char *)thumbnailHeap->base());
             if (jpegExifSize < 0) {
                 ret = UNKNOWN_ERROR;
-                LOGE("ERR(%s):Fail on jpegExifSize < 0", __FUNCTION__);
+                ALOGE("ERR(%s):Fail on jpegExifSize < 0", __FUNCTION__);
                 goto out;
             }
             
@@ -1130,34 +1130,34 @@ out:
     mCaptureInProgress = false;
     mStateLock.unlock();
     
-    LOGV("%s - end", __FUNCTION__);
+    ALOGV("%s - end", __FUNCTION__);
 
     return ret;
 }
 
 status_t CameraHardwareSec::takePicture()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     stopPreview();
 
     Mutex::Autolock lock(mStateLock);
     if (mCaptureInProgress) {
-        LOGE("%s : capture already in progress", __func__);
+        ALOGE("%s : capture already in progress", __func__);
         return INVALID_OPERATION;
     }
 
     if (!mRawHeap) {
         int rawHeapSize = mPostViewSize;
-        LOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
+        ALOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
         mRawHeap = mGetMemoryCb(-1, rawHeapSize, 1, 0);
         if (!mRawHeap) {
-            LOGE("ERR(%s): Raw heap creation fail", __func__);
+            ALOGE("ERR(%s): Raw heap creation fail", __func__);
         }
     }
 
     if (mPictureThread->run("CameraPictureThread", PRIORITY_DEFAULT) != NO_ERROR) {
-        LOGE("%s : couldn't run picture thread", __func__);
+        ALOGE("%s : couldn't run picture thread", __func__);
         return INVALID_OPERATION;
     }
     mCaptureInProgress = true;
@@ -1214,7 +1214,7 @@ void CameraHardwareSec::putParameters(char *parms)
 
 status_t CameraHardwareSec::setParameters(const char *parameters)
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     CameraParameters params;
 
@@ -1226,7 +1226,7 @@ status_t CameraHardwareSec::setParameters(const char *parameters)
 
 status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     status_t ret = NO_ERROR;
 
@@ -1237,7 +1237,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     mStateLock.lock();
     if (mCaptureInProgress) {
         mStateLock.unlock();
-        LOGE("%s : capture in progress, not allowed", __func__);
+        ALOGE("%s : capture in progress, not allowed", __func__);
         return UNKNOWN_ERROR;
     }
     mStateLock.unlock();
@@ -1247,7 +1247,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_preview_height = 0;
     params.getPreviewSize(&new_preview_width, &new_preview_height);
     const char *new_str_preview_format = params.getPreviewFormat();
-    LOGV("%s : new_preview_width x new_preview_height = %dx%d, format = %s",
+    ALOGV("%s : new_preview_width x new_preview_height = %dx%d, format = %s",
          __func__, new_preview_width, new_preview_height, new_str_preview_format);
 
     if (0 < new_preview_width && 0 < new_preview_height &&
@@ -1265,7 +1265,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             new_preview_format = V4L2_PIX_FMT_YUV420; //for 3rd party
 
         if (mSecCamera->setPreviewSize(new_preview_width, new_preview_height, new_preview_format) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setPreviewSize(width(%d), height(%d), format(%d))",
+            ALOGE("ERR(%s):Fail on mSecCamera->setPreviewSize(width(%d), height(%d), format(%d))",
                     __func__, new_preview_width, new_preview_height, new_preview_format);
             ret = UNKNOWN_ERROR;
         } else {
@@ -1273,7 +1273,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             mParameters.setPreviewFormat(new_str_preview_format);
         }
     } else {
-        LOGE("%s: Invalid preview size(%dx%d)",
+        ALOGE("%s: Invalid preview size(%dx%d)",
                 __func__, new_preview_width, new_preview_height);
 
         ret = INVALID_OPERATION;
@@ -1283,10 +1283,10 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_picture_height = 0;
 
     params.getPictureSize(&new_picture_width, &new_picture_height);
-    LOGV("%s : new_picture_width x new_picture_height = %dx%d", __func__, new_picture_width, new_picture_height);
+    ALOGV("%s : new_picture_width x new_picture_height = %dx%d", __func__, new_picture_width, new_picture_height);
     if (0 < new_picture_width && 0 < new_picture_height) {
         if (mSecCamera->setSnapshotSize(new_picture_width, new_picture_height) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setSnapshotSize(width(%d), height(%d))",
+            ALOGE("ERR(%s):Fail on mSecCamera->setSnapshotSize(width(%d), height(%d))",
                     __func__, new_picture_width, new_picture_height);
             ret = UNKNOWN_ERROR;
         } else {
@@ -1296,7 +1296,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     // picture format
     const char *new_str_picture_format = params.getPictureFormat();
-    LOGV("%s : new_str_picture_format %s", __func__, new_str_picture_format);
+    ALOGV("%s : new_str_picture_format %s", __func__, new_str_picture_format);
     if (new_str_picture_format != NULL) {
         int new_picture_format = 0;
 
@@ -1322,7 +1322,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             new_picture_format = V4L2_PIX_FMT_NV21; //for 3rd party
 
         if (mSecCamera->setSnapshotPixelFormat(new_picture_format) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setSnapshotPixelFormat(format(%d))", __func__, new_picture_format);
+            ALOGE("ERR(%s):Fail on mSecCamera->setSnapshotPixelFormat(format(%d))", __func__, new_picture_format);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.setPictureFormat(new_str_picture_format);
@@ -1331,11 +1331,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     //JPEG image quality
     int new_jpeg_quality = params.getInt(SecCameraParameters::KEY_JPEG_QUALITY);
-    LOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
+    ALOGV("%s : new_jpeg_quality %d", __func__, new_jpeg_quality);
     /* we ignore bad values */
     if (new_jpeg_quality >=1 && new_jpeg_quality <= 100) {
         if (mSecCamera->setJpegQuality(new_jpeg_quality) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setJpegQuality(quality(%d))", __func__, new_jpeg_quality);
+            ALOGE("ERR(%s):Fail on mSecCamera->setJpegQuality(quality(%d))", __func__, new_jpeg_quality);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_JPEG_QUALITY, new_jpeg_quality);
@@ -1347,7 +1347,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_jpeg_thumbnail_height= params.getInt(SecCameraParameters::KEY_JPEG_THUMBNAIL_HEIGHT);
     if (0 <= new_jpeg_thumbnail_width && 0 <= new_jpeg_thumbnail_height) {
         if (mSecCamera->setJpegThumbnailSize(new_jpeg_thumbnail_width, new_jpeg_thumbnail_height) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setJpegThumbnailSize(width(%d), height(%d))", __func__, new_jpeg_thumbnail_width, new_jpeg_thumbnail_height);
+            ALOGE("ERR(%s):Fail on mSecCamera->setJpegThumbnailSize(width(%d), height(%d))", __func__, new_jpeg_thumbnail_width, new_jpeg_thumbnail_height);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_JPEG_THUMBNAIL_WIDTH, new_jpeg_thumbnail_width);
@@ -1361,17 +1361,17 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
      * on scene mode.  don't return an error because it causes CTS failure.
      */
     if (new_frame_rate != mParameters.getPreviewFrameRate()) {
-        LOGW("WARN(%s): request for preview frame %d not allowed, != %d\n",
+        ALOGW("WARN(%s): request for preview frame %d not allowed, != %d\n",
              __func__, new_frame_rate, mParameters.getPreviewFrameRate());
     }
 
     // rotation
     int new_rotation = params.getInt(SecCameraParameters::KEY_ROTATION);
-    LOGV("%s : new_rotation %d", __func__, new_rotation);
+    ALOGV("%s : new_rotation %d", __func__, new_rotation);
     if (0 <= new_rotation) {
-        LOGV("%s : set orientation:%d\n", __func__, new_rotation);
+        ALOGV("%s : set orientation:%d\n", __func__, new_rotation);
         if (mSecCamera->setExifOrientationInfo(new_rotation) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
+            ALOGE("ERR(%s):Fail on mSecCamera->setExifOrientationInfo(%d)", __func__, new_rotation);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_ROTATION, new_rotation);
@@ -1381,11 +1381,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // zoom
     int new_zoom = params.getInt(SecCameraParameters::KEY_ZOOM);
     int max_zoom = params.getInt(SecCameraParameters::KEY_MAX_ZOOM);
-    LOGV("%s : new_zoom %d", __func__, new_zoom);
+    ALOGV("%s : new_zoom %d", __func__, new_zoom);
     if (0 <= new_zoom && new_zoom <= max_zoom) {
-        LOGV("%s : set zoom:%d\n", __func__, new_zoom);
+        ALOGV("%s : set zoom:%d\n", __func__, new_zoom);
         if (mSecCamera->setZoom(new_zoom) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setZoom(%d)", __func__, new_zoom);
+            ALOGE("ERR(%s):Fail on mSecCamera->setZoom(%d)", __func__, new_zoom);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_ZOOM, new_zoom);
@@ -1396,11 +1396,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_exposure_compensation = params.getInt(SecCameraParameters::KEY_EXPOSURE_COMPENSATION);
     int max_exposure_compensation = params.getInt(SecCameraParameters::KEY_MAX_EXPOSURE_COMPENSATION);
     int min_exposure_compensation = params.getInt(SecCameraParameters::KEY_MIN_EXPOSURE_COMPENSATION);
-    LOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
+    ALOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
     if ((min_exposure_compensation <= new_exposure_compensation) &&
         (max_exposure_compensation >= new_exposure_compensation)) {
         if (mSecCamera->setBrightness(new_exposure_compensation) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setBrightness(brightness(%d))", __func__, new_exposure_compensation);
+            ALOGE("ERR(%s):Fail on mSecCamera->setBrightness(brightness(%d))", __func__, new_exposure_compensation);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_EXPOSURE_COMPENSATION, new_exposure_compensation);
@@ -1411,11 +1411,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_contrast = params.getInt(SecCameraParameters::KEY_CONTRAST);
     int max_contrast = params.getInt(SecCameraParameters::KEY_MAX_CONTRAST);
     int min_contrast = params.getInt(SecCameraParameters::KEY_MIN_CONTRAST);
-    LOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
+    ALOGV("%s : new_exposure_compensation %d", __func__, new_exposure_compensation);
     if ((min_contrast <= new_contrast) &&
         (max_contrast >= new_contrast)) {
         if (mSecCamera->setContrast(new_contrast) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setContrast(brightness(%d))", __func__, new_exposure_compensation);
+            ALOGE("ERR(%s):Fail on mSecCamera->setContrast(brightness(%d))", __func__, new_exposure_compensation);
             ret = UNKNOWN_ERROR;
         } else {
             mParameters.set(SecCameraParameters::KEY_CONTRAST, new_contrast);
@@ -1424,7 +1424,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
 
     // whitebalance
     const char *new_white_str = params.get(SecCameraParameters::KEY_WHITE_BALANCE);
-    LOGV("%s : new_white_str %s", __func__, new_white_str);
+    ALOGV("%s : new_white_str %s", __func__, new_white_str);
     if (new_white_str != NULL) {
         int new_white = -1;
 
@@ -1443,13 +1443,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                          SecCameraParameters::WHITE_BALANCE_INCANDESCENT))
             new_white = WHITE_BALANCE_TUNGSTEN;
         else {
-            LOGE("ERR(%s):Invalid white balance(%s)", __func__, new_white_str); //twilight, shade, warm_flourescent
+            ALOGE("ERR(%s):Invalid white balance(%s)", __func__, new_white_str); //twilight, shade, warm_flourescent
             ret = UNKNOWN_ERROR;
         }
 
         if (0 <= new_white) {
             if (mSecCamera->setWhiteBalance(new_white) < 0) {
-                LOGE("ERR(%s):Fail on mSecCamera->setWhiteBalance(white(%d))", __func__, new_white);
+                ALOGE("ERR(%s):Fail on mSecCamera->setWhiteBalance(white(%d))", __func__, new_white);
                 ret = UNKNOWN_ERROR;
             } else {
                 mParameters.set(SecCameraParameters::KEY_WHITE_BALANCE, new_white_str);
@@ -1484,13 +1484,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             } else if (!strcmp(new_iso_str, SecCameraParameters::ISO_MOVIE)) {
                 new_iso = ISO_MOVIE;
             } else {
-                LOGE("%s::unmatched iso(%s)", __func__, new_iso_str);
+                ALOGE("%s::unmatched iso(%s)", __func__, new_iso_str);
                 ret = UNKNOWN_ERROR;
             }
         }
         if (0 <= new_iso) {
             if (mSecCamera->setISO(new_iso) < 0) {
-                LOGE("%s::mSecCamera->setISO(%d) fail", __func__, new_iso);
+                ALOGE("%s::mSecCamera->setISO(%d) fail", __func__, new_iso);
                 ret = UNKNOWN_ERROR;
             } else {
                 mParameters.set(SecCameraParameters::KEY_ISO, new_iso_str);
@@ -1515,9 +1515,9 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     if (new_scene_mode_str && current_scene_mode_str) {
         if (!strcmp(new_scene_mode_str, current_scene_mode_str)) {
             if ((new_min_fps != current_min_fps) || (new_max_fps != current_max_fps)) {
-                LOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
+                ALOGW("%s : requested new_min_fps = %d, new_max_fps = %d not allowed",
                         __func__, new_min_fps, new_max_fps);
-                LOGE("%s : current_min_fps = %d, current_max_fps = %d",
+                ALOGE("%s : current_min_fps = %d, current_max_fps = %d",
                         __func__, current_min_fps, current_max_fps);
                 ret = UNKNOWN_ERROR;
             }
@@ -1553,13 +1553,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                             BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR);
         }
         else {
-            LOGE("%s::unmatched focus_mode(%s)", __func__, new_focus_mode_str);
+            ALOGE("%s::unmatched focus_mode(%s)", __func__, new_focus_mode_str);
             ret = UNKNOWN_ERROR;
         }
 
         if (0 <= new_focus_mode) {
             if (mSecCamera->setFocusMode(new_focus_mode) < 0) {
-                LOGE("%s::mSecCamera->setFocusMode(%d) fail", __func__, new_focus_mode);
+                ALOGE("%s::mSecCamera->setFocusMode(%d) fail", __func__, new_focus_mode);
                 ret = UNKNOWN_ERROR;
             } else {
                 mParameters.set(SecCameraParameters::KEY_FOCUS_MODE, new_focus_mode_str);
@@ -1621,7 +1621,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
                                SecCameraParameters::SCENE_MODE_CANDLELIGHT)) {
                 new_scene_mode = SCENE_MODE_CANDLE_LIGHT;
             } else {
-                LOGE("%s::unmatched scene_mode(%s)",
+                ALOGE("%s::unmatched scene_mode(%s)",
                         __func__, new_scene_mode_str); //action, night-portrait, theatre, steadyphoto
                 ret = UNKNOWN_ERROR;
             }
@@ -1640,12 +1640,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             else if (!strcmp(new_flash_mode_str, SecCameraParameters::FLASH_MODE_TORCH))
                 new_flash_mode = FLASH_MODE_TORCH;
             else {
-                LOGE("%s::unmatched flash_mode(%s)", __func__, new_flash_mode_str); //red-eye
+                ALOGE("%s::unmatched flash_mode(%s)", __func__, new_flash_mode_str); //red-eye
                 ret = UNKNOWN_ERROR;
             }
             if (0 <= new_flash_mode) {
                 if (mSecCamera->setFlashMode(new_flash_mode) < 0) {
-                    LOGE("%s::mSecCamera->setFlashMode(%d) fail", __func__, new_flash_mode);
+                    ALOGE("%s::mSecCamera->setFlashMode(%d) fail", __func__, new_flash_mode);
                     ret = UNKNOWN_ERROR;
                 } else {
                     mParameters.set(SecCameraParameters::KEY_FLASH_MODE, new_flash_mode_str);
@@ -1656,7 +1656,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         //  scene..
         if (0 <= new_scene_mode) {
             if (mSecCamera->setSceneMode(new_scene_mode) < 0) {
-                LOGE("%s::mSecCamera->setSceneMode(%d) fail", __func__, new_scene_mode);
+                ALOGE("%s::mSecCamera->setSceneMode(%d) fail", __func__, new_scene_mode);
                 ret = UNKNOWN_ERROR;
             } else {
                 mParameters.set(SecCameraParameters::KEY_SCENE_MODE, new_scene_mode_str);
@@ -1687,13 +1687,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             new_image_effect = IMAGE_EFFECT_NEGATIVE;
         else {
             //posterize, whiteboard, blackboard, solarize
-            LOGE("ERR(%s):Invalid effect(%s)", __func__, new_image_effect_str);
+            ALOGE("ERR(%s):Invalid effect(%s)", __func__, new_image_effect_str);
             ret = UNKNOWN_ERROR;
         }
 
         if (new_image_effect >= 0) {
             if (mSecCamera->setImageEffect(new_image_effect) < 0) {
-                LOGE("ERR(%s):Fail on mSecCamera->setImageEffect(effect(%d))", __func__, new_image_effect);
+                ALOGE("ERR(%s):Fail on mSecCamera->setImageEffect(effect(%d))", __func__, new_image_effect);
                 ret = UNKNOWN_ERROR;
             } else {
                 const char *old_image_effect_str = mParameters.get(SecCameraParameters::KEY_EFFECT);
@@ -1713,7 +1713,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_vtmode = mInternalParameters.getInt("vtmode");
     if (0 <= new_vtmode) {
         if (mSecCamera->setVTmode(new_vtmode) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setVTMode(%d)", __func__, new_vtmode);
+            ALOGE("ERR(%s):Fail on mSecCamera->setVTMode(%d)", __func__, new_vtmode);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1722,7 +1722,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_wdr = mInternalParameters.getInt("wdr");
     if (0 <= new_wdr) {
         if (mSecCamera->setWDR(new_wdr) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setWDR(%d)", __func__, new_wdr);
+            ALOGE("ERR(%s):Fail on mSecCamera->setWDR(%d)", __func__, new_wdr);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1731,7 +1731,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_anti_shake = mInternalParameters.getInt("anti-shake");
     if (0 <= new_anti_shake) {
         if (mSecCamera->setAntiShake(new_anti_shake) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setWDR(%d)", __func__, new_anti_shake);
+            ALOGE("ERR(%s):Fail on mSecCamera->setWDR(%d)", __func__, new_anti_shake);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1739,7 +1739,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // gps latitude
     const char *new_gps_latitude_str = params.get(SecCameraParameters::KEY_GPS_LATITUDE);
     if (mSecCamera->setGPSLatitude(new_gps_latitude_str) < 0) {
-        LOGE("%s::mSecCamera->setGPSLatitude(%s) fail", __func__, new_gps_latitude_str);
+        ALOGE("%s::mSecCamera->setGPSLatitude(%s) fail", __func__, new_gps_latitude_str);
         ret = UNKNOWN_ERROR;
     } else {
         if (new_gps_latitude_str) {
@@ -1752,7 +1752,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // gps longitude
     const char *new_gps_longitude_str = params.get(SecCameraParameters::KEY_GPS_LONGITUDE);
     if (mSecCamera->setGPSLongitude(new_gps_longitude_str) < 0) {
-        LOGE("%s::mSecCamera->setGPSLongitude(%s) fail", __func__, new_gps_longitude_str);
+        ALOGE("%s::mSecCamera->setGPSLongitude(%s) fail", __func__, new_gps_longitude_str);
         ret = UNKNOWN_ERROR;
     } else {
         if (new_gps_longitude_str) {
@@ -1765,7 +1765,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // gps altitude
     const char *new_gps_altitude_str = params.get(SecCameraParameters::KEY_GPS_ALTITUDE);
     if (mSecCamera->setGPSAltitude(new_gps_altitude_str) < 0) {
-        LOGE("%s::mSecCamera->setGPSAltitude(%s) fail", __func__, new_gps_altitude_str);
+        ALOGE("%s::mSecCamera->setGPSAltitude(%s) fail", __func__, new_gps_altitude_str);
         ret = UNKNOWN_ERROR;
     } else {
         if (new_gps_altitude_str) {
@@ -1778,7 +1778,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // gps timestamp
     const char *new_gps_timestamp_str = params.get(SecCameraParameters::KEY_GPS_TIMESTAMP);
     if (mSecCamera->setGPSTimeStamp(new_gps_timestamp_str) < 0) {
-        LOGE("%s::mSecCamera->setGPSTimeStamp(%s) fail", __func__, new_gps_timestamp_str);
+        ALOGE("%s::mSecCamera->setGPSTimeStamp(%s) fail", __func__, new_gps_timestamp_str);
         ret = UNKNOWN_ERROR;
     } else {
         if (new_gps_timestamp_str) {
@@ -1791,7 +1791,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // gps processing method
     const char *new_gps_processing_method_str = params.get(SecCameraParameters::KEY_GPS_PROCESSING_METHOD);
     if (mSecCamera->setGPSProcessingMethod(new_gps_processing_method_str) < 0) {
-        LOGE("%s::mSecCamera->setGPSProcessingMethod(%s) fail", __func__, new_gps_processing_method_str);
+        ALOGE("%s::mSecCamera->setGPSProcessingMethod(%s) fail", __func__, new_gps_processing_method_str);
         ret = UNKNOWN_ERROR;
     } else {
         if (new_gps_processing_method_str) {
@@ -1804,7 +1804,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     // focus areas
     const char *new_focus_area = params.get(SecCameraParameters::KEY_FOCUS_AREAS);
     if (new_focus_area != NULL) {
-        LOGV("focus area: %s", new_focus_area);
+        ALOGV("focus area: %s", new_focus_area);
         SecCameraArea area(new_focus_area);
 
         if(!area.isDummy()) {
@@ -1817,16 +1817,16 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             x = (x * width) / 2000;
             y = (y * height) / 2000;
 
-            LOGV("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
+            ALOGV("area=%s, x=%i, y=%i", area.toString8().string(), x, y);
             if(mSecCamera->setObjectPosition(x, y) < 0) {
-                LOGE("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
+                ALOGE("ERR(%s):Fail on mSecCamera->setObjectPosition(%s)", __func__, new_focus_area);
                 ret = UNKNOWN_ERROR;
             }
         }
 
         int val = area.isDummy() ? 0 : 1;
         if(mSecCamera->setTouchAFStartStop(val) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setTouchAFStartStop(%d)", __func__, val);
+            ALOGE("ERR(%s):Fail on mSecCamera->setTouchAFStartStop(%d)", __func__, val);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1836,12 +1836,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_recording_height= mInternalParameters.getInt("recording-size-height");
     if (0 < new_recording_width && 0 < new_recording_height) {
         if (mSecCamera->setRecordingSize(new_recording_width, new_recording_height) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setRecordingSize(width(%d), height(%d))", __func__, new_recording_width, new_recording_height);
+            ALOGE("ERR(%s):Fail on mSecCamera->setRecordingSize(width(%d), height(%d))", __func__, new_recording_width, new_recording_height);
             ret = UNKNOWN_ERROR;
         }
     } else {
         if (mSecCamera->setRecordingSize(new_preview_width, new_preview_height) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setRecordingSize(width(%d), height(%d))", __func__, new_preview_width, new_preview_height);
+            ALOGE("ERR(%s):Fail on mSecCamera->setRecordingSize(width(%d), height(%d))", __func__, new_preview_width, new_preview_height);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1855,13 +1855,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_gamma_str, "on"))
             new_gamma = GAMMA_ON;
         else {
-            LOGE("%s::unmatched gamma(%s)", __func__, new_gamma_str);
+            ALOGE("%s::unmatched gamma(%s)", __func__, new_gamma_str);
             ret = UNKNOWN_ERROR;
         }
 
         if (0 <= new_gamma) {
             if (mSecCamera->setGamma(new_gamma) < 0) {
-                LOGE("%s::mSecCamera->setGamma(%d) fail", __func__, new_gamma);
+                ALOGE("%s::mSecCamera->setGamma(%d) fail", __func__, new_gamma);
                 ret = UNKNOWN_ERROR;
             }
         }
@@ -1877,13 +1877,13 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_slow_ae_str, "on"))
             new_slow_ae = SLOW_AE_ON;
         else {
-            LOGE("%s::unmatched slow_ae(%s)", __func__, new_slow_ae_str);
+            ALOGE("%s::unmatched slow_ae(%s)", __func__, new_slow_ae_str);
             ret = UNKNOWN_ERROR;
         }
 
         if (0 <= new_slow_ae) {
             if (mSecCamera->setSlowAE(new_slow_ae) < 0) {
-                LOGE("%s::mSecCamera->setSlowAE(%d) fail", __func__, new_slow_ae);
+                ALOGE("%s::mSecCamera->setSlowAE(%d) fail", __func__, new_slow_ae);
                 ret = UNKNOWN_ERROR;
             }
         }
@@ -1893,7 +1893,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_sensor_mode = mInternalParameters.getInt("cam_mode");
     if (0 <= new_sensor_mode) {
         if (mSecCamera->setSensorMode(new_sensor_mode) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setSensorMode(%d)", __func__, new_sensor_mode);
+            ALOGE("ERR(%s):Fail on mSecCamera->setSensorMode(%d)", __func__, new_sensor_mode);
             ret = UNKNOWN_ERROR;
         }
     } else {
@@ -1904,7 +1904,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_shot_mode = mInternalParameters.getInt("shot_mode");
     if (0 <= new_shot_mode) {
         if (mSecCamera->setShotMode(new_shot_mode) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setShotMode(%d)", __func__, new_shot_mode);
+            ALOGE("ERR(%s):Fail on mSecCamera->setShotMode(%d)", __func__, new_shot_mode);
             ret = UNKNOWN_ERROR;
         }
     } else {
@@ -1915,7 +1915,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_blur_level = mInternalParameters.getInt("blur");
     if (0 <= new_blur_level) {
         if (mSecCamera->setBlur(new_blur_level) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setBlur(%d)", __func__, new_blur_level);
+            ALOGE("ERR(%s):Fail on mSecCamera->setBlur(%d)", __func__, new_blur_level);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1924,7 +1924,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     int new_dataline = mInternalParameters.getInt("chk_dataline");
     if (0 <= new_dataline) {
         if (mSecCamera->setDataLineCheck(new_dataline) < 0) {
-            LOGE("ERR(%s):Fail on mSecCamera->setDataLineCheck(%d)", __func__, new_dataline);
+            ALOGE("ERR(%s):Fail on mSecCamera->setDataLineCheck(%d)", __func__, new_dataline);
             ret = UNKNOWN_ERROR;
         }
     }
@@ -1936,7 +1936,7 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     }
     mPreviewLock.unlock();
 
-    LOGV("%s return ret = %d", __func__, ret);
+    ALOGV("%s return ret = %d", __func__, ret);
 
     return ret;
 }
@@ -1946,7 +1946,7 @@ char* CameraHardwareSec::getParameters() const
     String8     params_str8;
     char*       params_str;
 
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     params_str8 = mParameters.flatten();
     
@@ -1960,12 +1960,12 @@ char* CameraHardwareSec::getParameters() const
 status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t arg2)
 {
     if(!mSecCamera) {
-        LOGE("SecCamera instance isn't created");
+        ALOGE("SecCamera instance isn't created");
         return INVALID_OPERATION;
     }
 
     if(!previewEnabled()) {
-        LOGE("Preview is not running");
+        ALOGE("Preview is not running");
         return INVALID_OPERATION;
     }
 
@@ -1977,7 +1977,7 @@ status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t a
             return stopFaceDetection();
 
         default:
-            LOGE("Command [%i] isn't supported", command);
+            ALOGE("Command [%i] isn't supported", command);
             break;
     }
 
@@ -1986,7 +1986,7 @@ status_t CameraHardwareSec::sendCommand(int32_t command, int32_t arg1, int32_t a
 
 void CameraHardwareSec::release()
 {
-    LOGV("%s :", __func__);
+    ALOGV("%s :", __func__);
 
     /* shut down any threads we have that might be running.  do it here
      * instead of the destructor.  we're guaranteed to be on another thread

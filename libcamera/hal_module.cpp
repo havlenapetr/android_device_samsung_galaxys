@@ -28,19 +28,19 @@ using namespace android;
 
 #define RETURN_IF(hw)                                                       \
     if(!hw) {                                                               \
-        LOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);       \
+        ALOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);      \
         return;                                                             \
     }
 
 #define RETURN_NULL_IF(hw)                                                  \
     if(!hw) {                                                               \
-        LOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);       \
+        ALOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);      \
         return NULL;                                                        \
     }
 
 #define RETURN_EINVAL_IF(hw)                                                \
     if(!hw) {                                                               \
-        LOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);       \
+        ALOGE("%s: %i - Can't obtain hw driver!", __func__, __LINE__);      \
         return -EINVAL;                                                     \
     }
 
@@ -70,13 +70,13 @@ static CameraHardwareSec* sec_obtain_hw(struct camera_device * device)
     CameraHardwareSec* sec_hw = NULL;
 
     if(!device) {
-        LOGE("Can't obtain camera device!");
+        ALOGE("Can't obtain camera device!");
         goto end;
     }
 
     sec_dev = (sec_camera_device *) device;
     if(!sec_dev) {
-        LOGE("Can't obtain SEC camera device!");
+        ALOGE("Can't obtain SEC camera device!");
         goto end;
     }
 
@@ -93,7 +93,7 @@ end:
 int camera_set_preview_window(struct camera_device * device,
         struct preview_stream_ops *window)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -108,7 +108,7 @@ void camera_set_callbacks(struct camera_device * device,
         camera_request_memory get_memory,
         void *user)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -118,7 +118,7 @@ void camera_set_callbacks(struct camera_device * device,
 
 void camera_enable_msg_type(struct camera_device * device, int32_t msg_type)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -128,7 +128,7 @@ void camera_enable_msg_type(struct camera_device * device, int32_t msg_type)
 
 void camera_disable_msg_type(struct camera_device * device, int32_t msg_type)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -138,7 +138,7 @@ void camera_disable_msg_type(struct camera_device * device, int32_t msg_type)
 
 int camera_msg_type_enabled(struct camera_device * device, int32_t msg_type)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -148,7 +148,7 @@ int camera_msg_type_enabled(struct camera_device * device, int32_t msg_type)
 
 int camera_start_preview(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -158,7 +158,7 @@ int camera_start_preview(struct camera_device * device)
 
 void camera_stop_preview(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -168,7 +168,7 @@ void camera_stop_preview(struct camera_device * device)
 
 int camera_preview_enabled(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -178,7 +178,7 @@ int camera_preview_enabled(struct camera_device * device)
 
 int camera_store_meta_data_in_buffers(struct camera_device * device, int enable)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -188,7 +188,7 @@ int camera_store_meta_data_in_buffers(struct camera_device * device, int enable)
 
 int camera_start_recording(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -198,7 +198,7 @@ int camera_start_recording(struct camera_device * device)
 
 void camera_stop_recording(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -208,7 +208,7 @@ void camera_stop_recording(struct camera_device * device)
 
 int camera_recording_enabled(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -219,7 +219,7 @@ int camera_recording_enabled(struct camera_device * device)
 void camera_release_recording_frame(struct camera_device * device,
                 const void *opaque)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -229,7 +229,7 @@ void camera_release_recording_frame(struct camera_device * device,
 
 int camera_auto_focus(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -239,7 +239,7 @@ int camera_auto_focus(struct camera_device * device)
 
 int camera_cancel_auto_focus(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -249,7 +249,7 @@ int camera_cancel_auto_focus(struct camera_device * device)
 
 int camera_take_picture(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -259,7 +259,7 @@ int camera_take_picture(struct camera_device * device)
 
 int camera_cancel_picture(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -269,7 +269,7 @@ int camera_cancel_picture(struct camera_device * device)
 
 int camera_set_parameters(struct camera_device * device, const char *params)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -279,7 +279,7 @@ int camera_set_parameters(struct camera_device * device, const char *params)
 
 char* camera_get_parameters(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_NULL_IF(hw);
@@ -289,7 +289,7 @@ char* camera_get_parameters(struct camera_device * device)
 
 static void camera_put_parameters(struct camera_device *device, char *parms)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -300,7 +300,7 @@ static void camera_put_parameters(struct camera_device *device, char *parms)
 int camera_send_command(struct camera_device * device,
             int32_t cmd, int32_t arg1, int32_t arg2)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_EINVAL_IF(hw);
@@ -310,7 +310,7 @@ int camera_send_command(struct camera_device * device,
 
 void camera_release(struct camera_device * device)
 {
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     CameraHardwareSec* hw = sec_obtain_hw(device);
     RETURN_IF(hw);
@@ -334,18 +334,18 @@ int camera_device_close(hw_device_t* device)
 {
     Mutex::Autolock lock(gCameraHalDeviceLock);
 
-    LOGV("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
 
     sec_camera_device*  sec_dev;
 
     if(!device) {
-        LOGE("Can't obtain camera device!");
+        ALOGE("Can't obtain camera device!");
         goto done;
     }
 
     sec_dev = (sec_camera_device *) device;
     if(!sec_dev) {
-        LOGE("Can't obtain SEC camera device!");
+        ALOGE("Can't obtain SEC camera device!");
         goto done;
     }
 
@@ -386,14 +386,14 @@ int camera_device_open(const hw_module_t* module, const char* name,
     camera_device_ops_t*    camera_ops = NULL;
     CameraHardwareSec*      camera_hw = NULL;
 
-    LOGI("camera_device open");
+    ALOGV("camera_device open");
 
     if (name != NULL) {
         cameraid = atoi(name);
         num_cameras = sizeof(gCameraInfo);
 
         if(cameraid > num_cameras) {
-            LOGE("camera service provided cameraid out of bounds, "
+            ALOGE("camera service provided cameraid out of bounds, "
                     "cameraid = %d, num supported = %d",
                     cameraid, num_cameras);
             rv = -EINVAL;
@@ -401,21 +401,21 @@ int camera_device_open(const hw_module_t* module, const char* name,
         }
 
         if(gCamerasOpen >= MAX_SIMUL_CAMERAS_SUPPORTED) {
-            LOGE("maximum number of cameras already open");
+            ALOGE("maximum number of cameras already open");
             rv = -ENOMEM;
             goto fail;
         }
 
         camera_device = (sec_camera_device_t*)malloc(sizeof(*camera_device));
         if(!camera_device) {
-            LOGE("camera_device allocation fail");
+            ALOGE("camera_device allocation fail");
             rv = -ENOMEM;
             goto fail;
         }
 
         camera_ops = (camera_device_ops_t*)malloc(sizeof(*camera_ops));
         if(!camera_ops) {
-            LOGE("camera_ops allocation fail");
+            ALOGE("camera_ops allocation fail");
             rv = -ENOMEM;
             goto fail;
         }
