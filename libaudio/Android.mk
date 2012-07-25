@@ -19,15 +19,15 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_SHARED_LIBRARIES += libdl
 LOCAL_C_INCLUDES += \
 	external/tinyalsa/include \
-	system/media/audio_effects/include \
-	system/media/audio_utils/include
+	$(call include-path-for, audio-effects) \
+	$(call include-path-for, audio-utils)
 
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := AudioPolicyManager.cpp
-LOCAL_SHARED_LIBRARIES := libcutils libutils libmedia
+LOCAL_SHARED_LIBRARIES := libcutils libutils
 LOCAL_STATIC_LIBRARIES := libmedia_helper
 LOCAL_WHOLE_STATIC_LIBRARIES := libaudiopolicy_legacy
 LOCAL_MODULE := audio_policy.aries
