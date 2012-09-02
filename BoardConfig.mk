@@ -32,14 +32,14 @@ ARCH_ARM_HAVE_TLS_REGISTER := true
 TARGET_GLOBAL_CFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
 TARGET_GLOBAL_CPPFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
 
-TARGET_NO_BOOTLOADER := true
-TARGET_NO_RADIOIMAGE := true
+TARGET_NO_BOOTLOADER    := true
+TARGET_NO_RADIOIMAGE    := true
+TARGET_BOARD_PLATFORM   := s5pc110
+TARGET_BOOTLOADER_BOARD_NAME := aries
 
 # Releasetools
 TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/galaxys
 
-TARGET_BOARD_PLATFORM := s5pc110
-TARGET_BOOTLOADER_BOARD_NAME := aries
 TARGET_RECOVERY_UI_LIB := librecovery_ui_aries
 TARGET_RECOVERY_GRAPHICS_LIB := librecovery_graphics_aries
 TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
@@ -52,6 +52,10 @@ BOARD_HAVE_BLUETOOTH_BCM := true
 
 # Hardware rendering
 USE_OPENGL_RENDERER := true
+
+# TARGET_DISABLE_TRIPLE_BUFFERING can be used to disable triple buffering
+# on per target basis.
+TARGET_DISABLE_TRIPLE_BUFFERING := false
 
 # Video Devices
 BOARD_V4L2_DEVICE := /dev/video1
@@ -69,10 +73,10 @@ BOARD_NAND_PAGE_SIZE := 4096 -s 128
 BOARD_KERNEL_BASE := 0x32000000
 BOARD_KERNEL_PAGESIZE := 4096
 BOARD_KERNEL_CMDLINE := console=ttyFIQ0,115200 init=/init no_console_suspend
-TARGET_PREBUILT_KERNEL := device/samsung/galaxys/kernel
 
+TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_BOOTIMAGE_PARTITION_SIZE := 7864320
-BOARD_SYSTEMIMAGE_PARTITION_SIZE := 196608000
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := 262144000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 2013265920
 BOARD_FLASH_BLOCK_SIZE := 4096
 
@@ -89,6 +93,3 @@ WIFI_DRIVER_FW_PATH_PARAM   := "/sys/module/bcmdhd/parameters/firmware_path"
 WIFI_DRIVER_FW_PATH_STA     := "/vendor/firmware/fw_bcmdhd.bin"
 WIFI_DRIVER_FW_PATH_P2P     := "/vendor/firmware/fw_bcmdhd_p2p.bin"
 WIFI_DRIVER_FW_PATH_AP      := "/vendor/firmware/fw_bcmdhd_apsta.bin"
-
-# Recovery
-TARGET_USERIMAGES_USE_EXT4 := true

@@ -19,11 +19,15 @@
 # product configuration (apps).
 #
 
+# Get the long list of APNs
+PRODUCT_COPY_FILES := device/sample/etc/apns-full-conf.xml:system/etc/apns-conf.xml
+
 # Inherit from those products. Most specific first.
-# This is where we'd set a backup provider if we had one
-$(call inherit-product, $(SRC_TARGET_DIR)/product/languages_full.mk)
+$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 $(call inherit-product, device/samsung/galaxys/device.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full.mk)
+
+# We are using high-density artwork where available
+PRODUCT_LOCALES += hdpi
 
 # Discard inherited values and use our own instead.
 PRODUCT_NAME := full_galaxys
@@ -31,4 +35,3 @@ PRODUCT_DEVICE := galaxys
 PRODUCT_BRAND := Samsung
 PRODUCT_MANUFACTURER := Samsung
 PRODUCT_MODEL := GT-I9000
-PRODUCT_LOCALES += hdpi

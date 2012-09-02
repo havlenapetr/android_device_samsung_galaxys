@@ -52,6 +52,10 @@ PRODUCT_COPY_FILES += \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc
 
+# Audio policy config
+PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/libaudio/audio_policy.conf:system/etc/audio_policy.conf
+
 TARGET_USES_SDBOOT := false
 ifeq ($(TARGET_USES_SDBOOT),true)
 PRODUCT_COPY_FILES += \
@@ -116,7 +120,8 @@ PRODUCT_PACKAGES += \
 # These are the OpenMAX IL configuration files
 PRODUCT_COPY_FILES += \
     device/samsung/galaxys/sec_mm/sec_omx/sec_omx_core/secomxregistry:system/etc/secomxregistry \
-    device/samsung/galaxys/media_profiles.xml:system/etc/media_profiles.xml
+    device/samsung/galaxys/media_profiles.xml:system/etc/media_profiles.xml \
+    device/samsung/galaxys/media_codecs.xml:system/etc/media_codecs.xml
 
 # Video and jpeg hw libs
 PRODUCT_PACKAGES += \
@@ -139,6 +144,7 @@ PRODUCT_PACKAGES += \
     sensors.aries \
     audio.primary.aries \
     audio_policy.aries \
+    audio.usb.default \
     camera.aries
 
 # FmRadio
@@ -156,25 +162,21 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     AriesParts
 
-# apns config file
-PRODUCT_COPY_FILES += \
-    development/data/etc/apns-conf.xml:system/etc/apns-conf.xml
-
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
-    frameworks/base/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
-    frameworks/base/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
-    frameworks/base/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
-    frameworks/base/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
-    frameworks/base/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
-    frameworks/base/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
-    frameworks/base/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
-    frameworks/base/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
-    frameworks/base/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
-    frameworks/base/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
-    frameworks/base/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
-    frameworks/base/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
-    frameworks/base/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
+    frameworks/native/data/etc/handheld_core_hardware.xml:system/etc/permissions/handheld_core_hardware.xml \
+    frameworks/native/data/etc/android.hardware.camera.flash-autofocus.xml:system/etc/permissions/android.hardware.camera.flash-autofocus.xml \
+    frameworks/native/data/etc/android.hardware.camera.front.xml:system/etc/permissions/android.hardware.camera.front.xml \
+    frameworks/native/data/etc/android.hardware.telephony.gsm.xml:system/etc/permissions/android.hardware.telephony.gsm.xml \
+    frameworks/native/data/etc/android.hardware.location.xml:system/etc/permissions/android.hardware.location.xml \
+    frameworks/native/data/etc/android.hardware.location.gps.xml:system/etc/permissions/android.hardware.location.gps.xml \
+    frameworks/native/data/etc/android.hardware.wifi.xml:system/etc/permissions/android.hardware.wifi.xml \
+    frameworks/native/data/etc/android.hardware.wifi.direct.xml:system/etc/permissions/android.hardware.wifi.direct.xml \
+    frameworks/native/data/etc/android.hardware.sensor.proximity.xml:system/etc/permissions/android.hardware.sensor.proximity.xml \
+    frameworks/native/data/etc/android.hardware.sensor.light.xml:system/etc/permissions/android.hardware.sensor.light.xml \
+    frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:system/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+    frameworks/native/data/etc/android.software.sip.voip.xml:system/etc/permissions/android.software.sip.voip.xml \
+    frameworks/native/data/etc/android.hardware.usb.accessory.xml:system/etc/permissions/android.hardware.usb.accessory.xml \
     packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 # The OpenGL ES API level that is natively supported by this device.
@@ -188,8 +190,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 PRODUCT_PROPERTY_OVERRIDES += \
     wifi.interface=wlan0 \
     ro.telephony.ril_class=samsung \
-    mobiledata.interfaces=pdp0,eth0,gprs,ppp0 \
-    dalvik.vm.heapsize=32m
+    mobiledata.interfaces=pdp0,eth0,gprs,ppp0
 
 # enable Google-specific location features,
 # like NetworkLocationProvider and LocationCollector
@@ -209,14 +210,13 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
     persist.sys.usb.config=mtp
 
+include frameworks/native/build/phone-hdpi-512-dalvik-heap.mk
+
+# Screen size is "normal", density is "hdpi"
+PRODUCT_AAPT_CONFIG := normal hdpi
+
 # we have enough storage space to hold precise GC data
 PRODUCT_TAGS += dalvik.gc.type-precise
-
-# Screen density is actually considered a locale (since it is taken into account
-# the the build-time selection of resources). The product definitions including
-# this file must pay attention to the fact that the first entry in the final
-# PRODUCT_LOCALES expansion must not be a density.
-PRODUCT_LOCALES := hdpi
 
 # kernel modules
 PRODUCT_COPY_FILES += $(foreach module,\
