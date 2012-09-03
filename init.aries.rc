@@ -71,6 +71,12 @@ on post-fs
     # symlinks for samsung RIL
     symlink /radio/modem.bin /dev/block/bml12
 
+    # release some memory
+    rm -r /res
+    rm charger
+    rm recovery
+    rm recovery.rc
+
 on post-fs-data
     # usb host
     mkdir /dev/bus
