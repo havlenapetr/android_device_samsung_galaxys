@@ -63,6 +63,12 @@ on fs
     chown system system /sys/class/backlight/s5p_bl/brightness
     chown system system /sys/bus/i2c/drivers/fsa9480/7-0025/mode
 
+# Release some memory
+    rm -r /res
+    rm charger
+    rm recovery
+    rm recovery.rc
+
 on post-fs
     # We chown/chmod /datadata again so because mount is run as root + defaults
     chown system system /datadata
@@ -70,12 +76,6 @@ on post-fs
 
     # symlinks for samsung RIL
     symlink /radio/modem.bin /dev/block/bml12
-
-    # release some memory
-    rm -r /res
-    rm charger
-    rm recovery
-    rm recovery.rc
 
 on post-fs-data
     # usb host
