@@ -715,10 +715,8 @@ status_t CameraHardwareSec::startPreview()
 {
     ALOGV("%s - start", __func__);
 
-    Mutex::Autolock lock(mStateLock);
-    if (mCaptureInProgress) {
-        ALOGE("%s : capture in progress, not allowed", __func__);
-        return INVALID_OPERATION;
+    if (waitForCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
 
     Mutex::Autolock previewLock(mPreviewLock);
@@ -1126,13 +1124,32 @@ int CameraHardwareSec::pictureThread()
     }
 
 out:
-    mStateLock.lock();
+    mSecCamera->endSnapshot();
+    mCaptureLock.lock();
     mCaptureInProgress = false;
-    mStateLock.unlock();
-    
+    mCaptureCondition.broadcast();
+    mCaptureLock.unlock();
+
     ALOGV("%s - end", __FUNCTION__);
 
     return ret;
+}
+
+status_t CameraHardwareSec::waitForCaptureCompletion(int msec) {
+    nsecs_t endTime = (msec * 1000000LL) + systemTime(SYSTEM_TIME_MONOTONIC);
+    Mutex::Autolock lock(mCaptureLock);
+
+    while (mCaptureInProgress) {
+        nsecs_t remainingTime = endTime - systemTime(SYSTEM_TIME_MONOTONIC);
+        if (remainingTime <= 0) {
+            ALOGE("Timed out waiting picture thread.");
+            return TIMED_OUT;
+        }
+        ALOGD("Waiting for picture thread to complete.");
+        mCaptureCondition.waitRelative(mCaptureLock, remainingTime);
+    }
+
+    return NO_ERROR;
 }
 
 status_t CameraHardwareSec::takePicture()
@@ -1141,10 +1158,8 @@ status_t CameraHardwareSec::takePicture()
 
     stopPreview();
 
-    Mutex::Autolock lock(mStateLock);
-    if (mCaptureInProgress) {
-        ALOGE("%s : capture already in progress", __func__);
-        return INVALID_OPERATION;
+    if (waitForCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
 
     if (!mRawHeap) {
@@ -1160,7 +1175,10 @@ status_t CameraHardwareSec::takePicture()
         ALOGE("%s : couldn't run picture thread", __func__);
         return INVALID_OPERATION;
     }
+
+    mCaptureLock.lock();
     mCaptureInProgress = true;
+    mCaptureLock.unlock();
 
     return NO_ERROR;
 }
@@ -1231,16 +1249,11 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
     status_t ret = NO_ERROR;
 
     /* if someone calls us while picture thread is running, it could screw
-     * up the sensor quite a bit so return error.  we can't wait because
-     * that would cause deadlock with the callbacks
+     * up the sensor quite a bit so try to wait and after that return error.
      */
-    mStateLock.lock();
-    if (mCaptureInProgress) {
-        mStateLock.unlock();
-        ALOGE("%s : capture in progress, not allowed", __func__);
-        return UNKNOWN_ERROR;
+    if (waitForCaptureCompletion() != NO_ERROR) {
+        return TIMED_OUT;
     }
-    mStateLock.unlock();
 
     // preview size
     int new_preview_width  = 0;

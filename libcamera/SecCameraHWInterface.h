@@ -100,7 +100,6 @@ private:
         mHardware(hw) { }
         virtual bool threadLoop() {
             mHardware->pictureThread();
-            mHardware->mSecCamera->endSnapshot();
             return false;
         }
     };
@@ -141,6 +140,7 @@ private:
             void        setSkipFrame(int frame);
             bool        isSupportedPreviewSize(const int width,
                                                const int height) const;
+            status_t    waitForCaptureCompletion(int msec = 5000);
     /* used by auto focus thread to block until it's told to run */
     mutable Mutex       mFocusLock;
     mutable Condition   mFocusCondition;
@@ -155,8 +155,9 @@ private:
     volatile bool       mExitPreviewThread;
     volatile bool       mFaceDetectStarted;
 
-    /* used to guard threading state */
-    mutable Mutex       mStateLock;
+    /* used to guard mCaptureInProgress */
+    mutable Mutex       mCaptureLock;
+    mutable Condition   mCaptureCondition;
 
     CameraParameters    mParameters;
     CameraParameters    mInternalParameters;
