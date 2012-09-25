@@ -31,8 +31,6 @@ adb pull /system/lib/libsec-ril.so ../../../vendor/$MANUFACTURER/$DEVICE/proprie
 adb pull /system/bin/rild ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/rild
 adb pull /radio/modem.bin ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-adb pull /sbin/redbend_ua ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
-chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/redbend_ua
 
 adb pull /system/vendor/bin/pvrsrvinit ../../../vendor/$MANUFACTURER/$DEVICE/proprietary
 chmod 755 ../../../vendor/$MANUFACTURER/$DEVICE/proprietary/pvrsrvinit
@@ -103,7 +101,6 @@ PRODUCT_COPY_FILES += \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsecril-client.so:system/lib/libsecril-client.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/libsec-ril.so:system/lib/libsec-ril.so \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/rild:system/bin/rild \\
-    vendor/__MANUFACTURER__/__DEVICE__/proprietary/redbend_ua:root/sbin/redbend_ua \\
     vendor/__MANUFACTURER__/__DEVICE__/proprietary/modem.bin:modem.bin
     
 # All the blobs necessary for galaxys devices
