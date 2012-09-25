@@ -57,6 +57,9 @@ USE_OPENGL_RENDERER := true
 # on per target basis.
 TARGET_DISABLE_TRIPLE_BUFFERING := false
 
+# Custom vsync ioctl for hwcomposer
+BOARD_CUSTOM_VSYNC_IOCTL := true
+
 # Video Devices
 BOARD_V4L2_DEVICE := /dev/video1
 BOARD_CAMERA_DEVICE := /dev/video0
