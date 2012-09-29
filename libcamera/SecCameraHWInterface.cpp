@@ -283,34 +283,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_MAX_NUM_FOCUS_AREAS, "1");
         p.set(SecCameraParameters::KEY_FOCUS_AREAS, dummyArea.toString8());
 
-        /*
-        ce147 know nothing about scene modes
-        parameterString = SecCameraParameters::SCENE_MODE_AUTO;
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_PORTRAIT);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_LANDSCAPE);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_NIGHT);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_BEACH);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_SNOW);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_SUNSET);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_FIREWORKS);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_SPORTS);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_PARTY);
-        parameterString.append(",");
-        parameterString.append(SecCameraParameters::SCENE_MODE_CANDLELIGHT);
-        p.set(SecCameraParameters::KEY_SUPPORTED_SCENE_MODES,
-              parameterString.string());
-        p.set(SecCameraParameters::KEY_SCENE_MODE,
-              SecCameraParameters::SCENE_MODE_AUTO);*/
-
+        // zoom params
         p.set(SecCameraParameters::KEY_ZOOM, "0");
         p.set(SecCameraParameters::KEY_MAX_ZOOM, "12");
         p.set(SecCameraParameters::KEY_ZOOM_RATIOS, "100,125,150,175,200,225,250,275,300,325,350,375,400");
@@ -1023,12 +996,11 @@ int CameraHardwareSec::pictureThread()
     int             thumbHeight = 0;
     int             thumbSize = 0;
     unsigned int    picturePhyAddr = 0;
-    bool            flagShutterCallback = false;
 
     unsigned char*  jpegData = NULL;
     unsigned int    jpegSize = 0;
     /* * * * * * memory buffers * * * * * */
-    sp<MemoryHeapBase>  jpegHeap = NULL;
+    camera_memory_t*    jpegHeap = NULL;
     sp<MemoryHeapBase>  postviewHeap = NULL;
     sp<MemoryHeapBase>  thumbnailHeap = NULL;
     struct addrs_cap*   addrs;
@@ -1047,7 +1019,7 @@ int CameraHardwareSec::pictureThread()
             ALOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
             goto out;
         }
-        
+
         jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
         if(jpegData == NULL) {
             ALOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
@@ -1058,12 +1030,12 @@ int CameraHardwareSec::pictureThread()
 
         ALOGV("jpegSize(%i), picturePhyAddr(%i)", jpegSize, picturePhyAddr);
     } else {
-        jpegHeap = new MemoryHeapBase(frameSize);
+        jpegHeap = mGetMemoryCb(-1, frameSize, 1, 0);
         postviewHeap = new MemoryHeapBase(postViewSize);
         thumbnailHeap = new MemoryHeapBase(thumbSize);
 
         if (mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
-                                           (unsigned char*)jpegHeap->base(), &jpegSize) < 0) {
+                                           (unsigned char*)jpegHeap->data, &jpegSize) < 0) {
             ALOGE("ERR(%s):Fail on SecCamera->getSnapshotAndJpeg()", __FUNCTION__);
             goto out;
         }
@@ -1075,6 +1047,12 @@ int CameraHardwareSec::pictureThread()
         }
     }
 
+    if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
+        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
+    } else if ((mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) && mNotifyCb) {
+        mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
+    }
+
     if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
         if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
             if(picturePhyAddr != 0) {
@@ -1084,16 +1062,7 @@ int CameraHardwareSec::pictureThread()
             memcpy(mRawHeap->data, postviewHeap->base(), postViewSize);
         }
 
-        if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
-            mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
-            flagShutterCallback = true;
-        }
-
         mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
-    }
-
-    if(!flagShutterCallback && ((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb)) {
-        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
     }
 
     if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
@@ -1102,28 +1071,30 @@ int CameraHardwareSec::pictureThread()
             jpegMem = mGetMemoryCb(-1, jpegSize, 1, 0);
             memcpy(jpegMem->data, jpegData, jpegSize);
         } else {
-            sp<MemoryHeapBase> exifHeap = new MemoryHeapBase(EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE);
-            int jpegExifSize = mSecCamera->getExif((unsigned char *)exifHeap->base(),
+            camera_memory_t* exifHeap =
+                    mGetMemoryCb(-1, EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE, 1, 0);
+            int jpegExifSize = mSecCamera->getExif((unsigned char *)exifHeap->data,
                     (unsigned char *)thumbnailHeap->base());
             if (jpegExifSize < 0) {
                 ret = UNKNOWN_ERROR;
-                ALOGE("ERR(%s):Fail on jpegExifSize < 0", __FUNCTION__);
+                RELEASE_MEMORY_BUFFER(exifHeap);
                 goto out;
             }
-            
+
             jpegMem = mGetMemoryCb(-1, jpegSize + jpegExifSize, 1, 0);
             uint8_t *ptr = (uint8_t *) jpegMem->data;
-            memcpy(ptr, jpegHeap->base(), 2); ptr += 2;
-            memcpy(ptr, exifHeap->base(), jpegExifSize); ptr += jpegExifSize;
-            memcpy(ptr, (uint8_t *) jpegHeap->base() + 2, jpegSize - 2);
+            memcpy(ptr, jpegHeap->data, 2); ptr += 2;
+            memcpy(ptr, exifHeap->data, jpegExifSize); ptr += jpegExifSize;
+            memcpy(ptr, (uint8_t *) jpegHeap->data + 2, jpegSize - 2);
+            RELEASE_MEMORY_BUFFER(exifHeap);
         }
 
         mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, 0, NULL, mCallbackCookie);
-
         RELEASE_MEMORY_BUFFER(jpegMem);
     }
 
 out:
+    RELEASE_MEMORY_BUFFER(jpegHeap);
     mSecCamera->endSnapshot();
     mCaptureLock.lock();
     mCaptureInProgress = false;

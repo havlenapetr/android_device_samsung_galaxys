@@ -137,9 +137,6 @@ namespace android {
 #define CAMERA_DEV_NAME   "/dev/video0"
 #define CAMERA_DEV_NAME2  "/dev/video2"
 
-#define CAMERA_DEV_NAME_TEMP "/data/videotmp_000"
-#define CAMERA_DEV_NAME2_TEMP "/data/videotemp_002"
-
 
 #define BPP             2
 #define MIN(x, y)       (((x) < (y)) ? (x) : (y))

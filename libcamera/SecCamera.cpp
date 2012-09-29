@@ -1285,7 +1285,9 @@ int SecCamera::getExif(unsigned char *pExifDst, unsigned char *pThumbSrc)
         jpgEnc.encode(&thumbSize, NULL);
 
         ALOGV("%s : enableThumb set to true", __func__);
-        mExifInfo.enableThumb = true;
+        //TODO: findout why this causes memory corruption,
+        //      probably we make bad thumbnail MemoryHeapBase
+        //mExifInfo.enableThumb = true;
     } else {
         ALOGV("%s : enableThumb set to false", __func__);
         mExifInfo.enableThumb = false;
