@@ -200,7 +200,7 @@ service tvout /vendor/bin/tvoutserver
     group graphics
 
 service tvouthack /vendor/bin/tvouthack
-    class late_start
+    class main
     user system
     group graphics
     disabled
