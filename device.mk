@@ -44,7 +44,8 @@ DEVICE_PACKAGE_OVERLAYS := device/samsung/galaxys/overlay
 PRODUCT_COPY_FILES := \
     device/samsung/galaxys/asound.conf:system/etc/asound.conf \
     device/samsung/galaxys/vold.fstab:system/etc/vold.fstab \
-    device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg
+    device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg \
+    device/samsung/galaxys/main.conf:system/etc/bluetooth/main.conf
 
 # Init files
 PRODUCT_COPY_FILES += \
