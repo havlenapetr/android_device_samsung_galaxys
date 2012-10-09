@@ -33,10 +33,16 @@
 #define BACK_CAMERA_INFINITY_FOCUS_DISTANCES_STR   "0.10,1.20,Infinity"
 #define FRONT_CAMERA_FOCUS_DISTANCES_STR           "0.20,0.25,Infinity"
 
-#define RELEASE_MEMORY_BUFFER(buffer)                                \
-    if (buffer) {                                                    \
-        buffer->release(buffer);                                     \
-        buffer = NULL;                                               \
+#define RELEASE_MEMORY_BUFFER(buffer)                               \
+    if (buffer) {                                                   \
+        buffer->release(buffer);                                    \
+        buffer = NULL;                                              \
+    }
+
+#define CHECK_PICT(err, ...)                                        \
+    if(err < 0) {                                                   \
+        ALOGE(__VA_ARGS__);                                         \
+        goto out;                                                   \
     }
 
 namespace android {
@@ -1015,42 +1021,28 @@ int CameraHardwareSec::pictureThread()
 
     if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
         ret = mSecCamera->setSnapshotCmd();
-        if(ret < 0) {
-            ALOGE("ERR(%s):Fail on SecCamera->setSnapshotCmd()", __FUNCTION__);
-            goto out;
-        }
+		CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->setSnapshotCmd[%i]", __FUNCTION__, ret);
+    }
+    if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
+        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
+    }
 
-        jpegData = mSecCamera->getJpeg(&jpegSize, &picturePhyAddr);
-        if(jpegData == NULL) {
-            ALOGE("ERR(%s):Fail on SecCamera->getJpeg()", __FUNCTION__);
-            picturePhyAddr = 0;
-            ret = UNKNOWN_ERROR;
-            goto out;
-        }
-
-        ALOGV("jpegSize(%i), picturePhyAddr(%i)", jpegSize, picturePhyAddr);
+    if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
+        ret = mSecCamera->getJpeg(&picturePhyAddr, &jpegData, &jpegSize);
+        CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getJpeg[%i]", __FUNCTION__, ret);
     } else {
         jpegHeap = mGetMemoryCb(-1, frameSize, 1, 0);
         postviewHeap = new MemoryHeapBase(postViewSize);
         thumbnailHeap = new MemoryHeapBase(thumbSize);
 
-        if (mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
-                                           (unsigned char*)jpegHeap->data, &jpegSize) < 0) {
-            ALOGE("ERR(%s):Fail on SecCamera->getSnapshotAndJpeg()", __FUNCTION__);
-            goto out;
-        }
+        ret = mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
+                                             (unsigned char*)jpegHeap->data, &jpegSize);
+        CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getSnapshotAndJpeg[%i]", __FUNCTION__, ret);
 
         if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
                             (char *)thumbnailHeap->base(), thumbWidth, thumbHeight)) {
-            ALOGE("ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
-            goto out;
+            CHECK_PICT(UNKNOWN_ERROR, "ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
         }
-    }
-
-    if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
-        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
-    } else if ((mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) && mNotifyCb) {
-        mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
     }
 
     if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
@@ -1063,6 +1055,8 @@ int CameraHardwareSec::pictureThread()
         }
 
         mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
+    } else if ((mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) && mNotifyCb) {
+        mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
     }
 
     if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {

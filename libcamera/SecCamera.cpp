@@ -51,13 +51,6 @@ using namespace android;
         return -1;                                                   \
     }
 
-#define CHECK_PTR(return_value)                                      \
-    if (return_value < 0) {                                          \
-        ALOGE("%s::%d fail, errno: %s, m_camera_id = %d\n",          \
-             __func__,__LINE__, strerror(errno), m_camera_id);       \
-        return NULL;                                                 \
-    }
-
 #define SET_VALUE_IF(fd, what, value)                                \
     CHECK_FD(fd);                                                    \
     if (value != -1) {                                               \
@@ -1180,59 +1173,56 @@ int SecCamera::endSnapshot(void)
 /*
  * Set Jpeg quality & exif info and get JPEG data from camera ISP
  */
-unsigned char* SecCamera::getJpeg(unsigned int *jpeg_size, unsigned int *phyaddr)
+int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
+                       unsigned int *jpeg_size)
 {
     ALOGV("%s :", __func__);
 
     int index, ret = 0;
-    unsigned char *addr;
 
     LOG_TIME_DEFINE(2)
 
-    if(m_camera_id == CAMERA_ID_BACK) {
-        //Date time
-        time_t rawtime;
-        time(&rawtime);
-        struct tm *timeinfo = localtime(&rawtime);
+    //Date time
+    time_t rawtime;
+    time(&rawtime);
+    struct tm *timeinfo = localtime(&rawtime);
 
-        ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_TIME_INFO, timeinfo);
-        CHECK_PTR(ret);
+    ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_TIME_INFO, timeinfo);
+    CHECK(ret);
 
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
-        CHECK_PTR(ret);
-    }
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_CAPTURE, 0);
+    CHECK(ret);
+
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
+    CHECK(ret);
 
     // capture
     ret = fimc_poll(&m_events_c);
-    CHECK_PTR(ret);
+    CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
-    if (index != 0) {
-        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
-        return NULL;
-    }
-
-    *jpeg_size = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_SIZE);
-    CHECK_PTR(*jpeg_size);
-
-    int main_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_OFFSET);
-    CHECK_PTR(main_offset);
-    m_postview_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_POSTVIEW_OFFSET);
-    CHECK_PTR(m_postview_offset);
-
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
-    CHECK_PTR(ret);
-    ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
-            index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
-
-    addr = (unsigned char*)(m_capture_buf.start) + main_offset;
-    *phyaddr = getPhyAddrY(index) + m_postview_offset;
 
     LOG_TIME_START(2) // post
     ret = fimc_v4l2_streamoff(m_cam_fd);
-    CHECK_PTR(ret);
+    CHECK(ret);
     LOG_TIME_END(2)
 
-    return addr;
+    *jpeg_size = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_SIZE);
+    CHECK(*jpeg_size);
+
+    int main_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_OFFSET);
+    CHECK(main_offset);
+    m_postview_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_POSTVIEW_OFFSET);
+    CHECK(m_postview_offset);
+
+    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    CHECK(ret);
+    ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
+            index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
+
+    *jpeg_buf = (unsigned char*)(m_capture_buf.start) + main_offset;
+    *phyaddr = getPhyAddrY(index) + m_postview_offset;
+
+    return 0;
 }
 
 int SecCamera::getExif(unsigned char *pExifDst, unsigned char *pThumbSrc)
@@ -1341,7 +1331,7 @@ int SecCamera::getPostViewOffset(void)
 }
 
 int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
-                                            unsigned int *output_size)
+                                  unsigned int *jpeg_size)
 {
     ALOGV("%s :", __func__);
 
@@ -1491,7 +1481,7 @@ int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_bu
     memcpy(pInBuf, yuv_buf, snapshot_size);
 
     setExifChangedAttribute();
-    jpgEnc.encode(output_size, &mExifInfo);
+    jpgEnc.encode(jpeg_size, &mExifInfo);
 
     uint64_t outbuf_size;
     unsigned char *pOutBuf = (unsigned char *)jpgEnc.getOutBuf(&outbuf_size);

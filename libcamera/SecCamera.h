@@ -44,8 +44,8 @@
 namespace android {
 
 #if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
-#define LOG_CAMERA LOGD
-#define LOG_CAMERA_PREVIEW LOGD
+#define LOG_CAMERA ALOGD
+#define LOG_CAMERA_PREVIEW ALOGD
 
 #define LOG_TIME_DEFINE(n) \
     struct timeval time_start_##n, time_stop_##n; unsigned long log_time_##n = 0;
@@ -314,11 +314,6 @@ public:
     int             setSnapshotPixelFormat(int pixel_format);
     int             getSnapshotPixelFormat(void);
 
-    unsigned char*  getJpeg(unsigned char *snapshot_data, int snapshot_size, int *size);
-    unsigned char*  yuv2Jpeg(unsigned char *raw_data, int raw_size,
-                                int *jpeg_size,
-                                int width, int height, int pixel_format);
-
     int             setJpegThumbnailSize(int width, int height);
     int             getJpegThumbnailSize(int *width, int *height);
 
@@ -434,10 +429,11 @@ public:
     int             getCameraSensorESDStatus(void);
 #endif // ENABLE_ESD_PREVIEW_CHECK
 
-    int setFrameRate(int frame_rate);
-    unsigned char*  getJpeg(unsigned int*, unsigned int*);
-    int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
-                                        unsigned int *output_size);
+    int             setFrameRate(int frame_rate);
+    int             getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
+                            unsigned int *jpeg_size);
+    int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char* jpeg_buf,
+                                       unsigned int *jpeg_size);
     int             getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);
 
     void            getPostViewConfig(int*, int*, int*);
