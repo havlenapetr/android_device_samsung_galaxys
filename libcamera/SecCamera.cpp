@@ -1107,11 +1107,7 @@ int SecCamera::getPreviewPixelFormat(void)
 
 // ======================================================================
 // Snapshot
-/*
- * Devide getJpeg() as two funcs, setSnapshotCmd() & getJpeg() because of the shutter sound timing.
- * Here, just send the capture cmd to camera ISP to start JPEG capture.
- */
-int SecCamera::setSnapshotCmd(void)
+int SecCamera::beginSnapshot(void)
 {
     ALOGV("%s :", __func__);
 
@@ -1136,13 +1132,14 @@ int SecCamera::setSnapshotCmd(void)
     LOG_TIME_START(1) // prepare
     int nframe = 1;
 
-    ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
+    ret = fimc_v4l2_enum_fmt(m_cam_fd, m_snapshot_v4lformat);
     CHECK(ret);
 
-    if (m_camera_id == CAMERA_ID_BACK)
+    if (m_camera_id == CAMERA_ID_BACK) {
         ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height, V4L2_PIX_FMT_JPEG);
-    else
-        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, V4L2_PIX_FMT_JPEG);
+    } else {
+        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, m_snapshot_v4lformat);
+    }
     CHECK(ret);
 
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
@@ -1336,84 +1333,19 @@ int SecCamera::getPostViewOffset(void)
     return m_postview_offset;
 }
 
-int SecCamera::getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
-                                  unsigned int *jpeg_size)
+int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
+                       unsigned int *jpeg_size)
 {
     ALOGV("%s :", __func__);
 
     int index;
-    //unsigned int addr;
     unsigned char *addr;
     int ret = 0;
 
-    LOG_TIME_DEFINE(0)
-    LOG_TIME_DEFINE(1)
     LOG_TIME_DEFINE(2)
     LOG_TIME_DEFINE(3)
     LOG_TIME_DEFINE(4)
     LOG_TIME_DEFINE(5)
-
-    //fimc_v4l2_streamoff(m_cam_fd); [zzangdol] remove - it is separate in HWInterface with camera_id
-
-    CHECK_FD(m_cam_fd);
-
-    if (m_flag_camera_start > 0) {
-        LOG_TIME_START(0)
-        ALOGW("WARN(%s):Camera was in preview, should have been stopped\n", __func__);
-        stopPreview();
-        LOG_TIME_END(0)
-    }
-
-    memset(&m_events_c, 0, sizeof(m_events_c));
-    m_events_c.fd = m_cam_fd;
-    m_events_c.events = POLLIN | POLLERR;
-
-#if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
-    if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV420)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_YUV420");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_NV12");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12T)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_NV12T");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV21)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_NV21");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV422P)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_YUV422P");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUYV)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_YUYV");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_UYVY)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_UYVY");
-    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_RGB565)
-        ALOGV("SnapshotFormat:V4L2_PIX_FMT_RGB565");
-    else
-        ALOGV("SnapshotFormat:UnknownFormat");
-#endif
-
-    LOG_TIME_START(1) // prepare
-    int nframe = 1;
-
-    ret = fimc_v4l2_enum_fmt(m_cam_fd,m_snapshot_v4lformat);
-    CHECK(ret);
-
-    if (m_camera_id == CAMERA_ID_BACK)
-        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height,
-                                  m_snapshot_v4lformat);
-    else
-        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width,
-                                  m_snapshot_v4lformat);
-    CHECK(ret);
-
-    ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK(ret);
-    ret = fimc_v4l2_querybuf(m_cam_fd, &m_capture_buf, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-    CHECK(ret);
-
-    ret = fimc_v4l2_qbuf(m_cam_fd, 0);
-    CHECK(ret);
-
-    ret = fimc_v4l2_streamon(m_cam_fd);
-    CHECK(ret);
-    LOG_TIME_END(1)
 
     LOG_TIME_START(2) // capture
     fimc_poll(&m_events_c);

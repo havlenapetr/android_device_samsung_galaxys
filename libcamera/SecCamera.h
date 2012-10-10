@@ -408,7 +408,7 @@ public:
     int             setSlowAE(int slow_ae);
     int             setExifOrientationInfo(int orientationInfo);
     int             setBatchReflection(void);
-    int             setSnapshotCmd(void);
+    int             beginSnapshot(void);
     int             endSnapshot(void);
     int             setCameraSensorReset(void);
     int             setSensorMode(int sensor_mode); /* Camcorder fix fps */
@@ -432,8 +432,8 @@ public:
     int             setFrameRate(int frame_rate);
     int             getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
                             unsigned int *jpeg_size);
-    int             getSnapshotAndJpeg(unsigned char *yuv_buf, unsigned char* jpeg_buf,
-                                       unsigned int *jpeg_size);
+    int             getJpeg(unsigned char *yuv_buf, unsigned char* jpeg_buf,
+                            unsigned int *jpeg_size);
     int             getExif(unsigned char *pExifDst, unsigned char *pThumbSrc);
 
     void            getPostViewConfig(int*, int*, int*);

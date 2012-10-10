@@ -1033,10 +1033,9 @@ int CameraHardwareSec::pictureThread()
     addrs[0].width  = pictureWidth;
     addrs[0].height = pictureHeight;
 
-    if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-        ret = mSecCamera->setSnapshotCmd();
-		CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->setSnapshotCmd[%i]", __FUNCTION__, ret);
-    }
+    ret = mSecCamera->beginSnapshot();
+    CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->beginSnapshot[%i]", __FUNCTION__, ret);
+
     if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
         mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
     }
@@ -1049,8 +1048,8 @@ int CameraHardwareSec::pictureThread()
         postviewHeap = new MemoryHeapBase(postViewSize);
         thumbnailHeap = new MemoryHeapBase(thumbSize);
 
-        ret = mSecCamera->getSnapshotAndJpeg((unsigned char*)postviewHeap->base(),
-                                             (unsigned char*)jpegHeap->data, &jpegSize);
+        ret = mSecCamera->getJpeg((unsigned char*)postviewHeap->base(),
+                                  (unsigned char*)jpegHeap->data, &jpegSize);
         CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getSnapshotAndJpeg[%i]", __FUNCTION__, ret);
 
         if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
