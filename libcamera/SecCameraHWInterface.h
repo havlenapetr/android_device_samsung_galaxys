@@ -151,6 +151,7 @@ private:
     mutable Condition   mPreviewCondition;
     mutable Condition   mPreviewStoppedCondition;
     volatile bool       mPreviewRunning;
+    volatile bool       mPreviewPaused;
     volatile bool       mPreviewStartDeferred;
     volatile bool       mExitPreviewThread;
     volatile bool       mFaceDetectStarted;

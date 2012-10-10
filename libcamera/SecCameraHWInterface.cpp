@@ -70,6 +70,7 @@ CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
           mCaptureInProgress(false),
           mFaceDetectStarted(false),
+          mPreviewPaused(false),
           mParameters(),
           mPreviewMemory(0),
           mRawHeap(0),
@@ -522,21 +523,25 @@ int CameraHardwareSec::previewThreadWrapper()
     ALOGI("%s: starting", __func__);
     while (1) {
         mPreviewLock.lock();
-        while (!mPreviewRunning) {
+        while (!mPreviewRunning || mPreviewPaused || mExitPreviewThread) {
             ALOGV("%s: calling mSecCamera->stopPreview() and waiting", __func__);
-            mSecCamera->stopPreview();
+            if(mPreviewPaused) {
+                mSecCamera->pausePreview();
+            } else {
+                mSecCamera->stopPreview();
+            }
             /* signal that we're stopping */
             mPreviewStoppedCondition.signal();
+            if(mExitPreviewThread) {
+                ALOGV("%s: exiting", __func__);
+                mPreviewLock.unlock();
+                return 0;
+            }
             mPreviewCondition.wait(mPreviewLock);
             ALOGV("%s: return from wait", __func__);
         }
         mPreviewLock.unlock();
 
-        if (mExitPreviewThread) {
-            ALOGV("%s: exiting", __func__);
-            mSecCamera->stopPreview();
-            return 0;
-        }
         previewThread();
     }
 }
@@ -723,7 +728,15 @@ status_t CameraHardwareSec::startPreview()
 status_t CameraHardwareSec::startPreview_l()
 {
     status_t ret;
-    int width, height, frame_size;
+
+    if(mPreviewPaused) {
+        if(mSecCamera->resumePreview() < 0) {
+            ALOGE("ERR(%s):Fail on mSecCamera->resumePreview()", __func__);
+            return UNKNOWN_ERROR;
+        }
+        mPreviewPaused = false;
+        return NO_ERROR;
+    }
 
     ret = mSecCamera->startPreview();
     if (ret < 0) {
@@ -733,6 +746,7 @@ status_t CameraHardwareSec::startPreview_l()
 
     setSkipFrame(INITIAL_SKIP_FRAME);
 
+    int width, height, frame_size;
     mSecCamera->getPreviewSize(&width, &height, &frame_size);
     ALOGD("MemoryHeapBase(fd(%d), size(%d), width(%d), height(%d))",
              mSecCamera->getCameraFd(), frame_size * kBufferCount, width, height);
@@ -1121,7 +1135,18 @@ status_t CameraHardwareSec::takePicture()
 {
     ALOGV("%s :", __func__);
 
+#if 0
+    mPreviewLock.lock();
+    if(!mPreviewPaused) {
+        mPreviewPaused = true;
+        mPreviewCondition.signal();
+        /* wait until preview thread is paused */
+        mPreviewStoppedCondition.wait(mPreviewLock);
+    }
+    mPreviewLock.unlock();
+#else
     stopPreview();
+#endif
 
     if (waitForCaptureCompletion() != NO_ERROR) {
         return TIMED_OUT;
@@ -1133,6 +1158,7 @@ status_t CameraHardwareSec::takePicture()
         mRawHeap = mGetMemoryCb(-1, rawHeapSize, 1, 0);
         if (!mRawHeap) {
             ALOGE("ERR(%s): Raw heap creation fail", __func__);
+            return UNKNOWN_ERROR;
         }
     }
 

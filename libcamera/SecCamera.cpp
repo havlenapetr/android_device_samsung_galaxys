@@ -971,9 +971,14 @@ unsigned int SecCamera::getPhyAddrC(int index)
     return addr_c;
 }
 
-void SecCamera::pausePreview()
+int SecCamera::pausePreview()
 {
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    return fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+}
+
+int SecCamera::resumePreview()
+{
+    return fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 1);
 }
 
 int SecCamera::getPreview()
@@ -1180,6 +1185,8 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
 
     int index, ret = 0;
 
+    CHECK_FD(m_cam_fd);
+
     LOG_TIME_DEFINE(2)
 
     //Date time
@@ -1200,6 +1207,7 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ret = fimc_poll(&m_events_c);
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
+    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
 
     LOG_TIME_START(2) // post
     ret = fimc_v4l2_streamoff(m_cam_fd);
@@ -1214,8 +1222,6 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     m_postview_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_POSTVIEW_OFFSET);
     CHECK(m_postview_offset);
 
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
-    CHECK(ret);
     ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
             index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 

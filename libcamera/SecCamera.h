@@ -445,7 +445,8 @@ public:
     void            SetJpgAddr(unsigned char *addr);
     unsigned int    getPhyAddrY(int);
     unsigned int    getPhyAddrC(int);
-    void            pausePreview();
+    int             pausePreview();
+    int             resumePreview();
     int             initCamera(int index);
     void            deinitCamera();
     static void     setJpegRatio(double ratio)
