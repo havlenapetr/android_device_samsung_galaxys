@@ -546,7 +546,10 @@ SecCamera::SecCamera() :
             m_flag_camera_start(0),
             m_jpeg_thumbnail_width (0),
             m_jpeg_thumbnail_height(0),
-            m_jpeg_quality(100)
+            m_jpeg_quality(100),
+            m_capture_bufs(NULL),
+            m_capture_bufs_size(0),
+            m_capture_bufs_index(0)
 #ifdef ENABLE_ESD_PREVIEW_CHECK
             ,
             m_esd_check_count(0)
@@ -567,8 +570,6 @@ SecCamera::SecCamera() :
     m_params->scene_mode = -1;
     m_params->sharpness = -1;
     m_params->white_balance = -1;
-
-    memset(&m_capture_buf, 0, sizeof(m_capture_buf));
 
     ALOGV("%s :", __func__);
 }
@@ -1107,7 +1108,7 @@ int SecCamera::getPreviewPixelFormat(void)
 
 // ======================================================================
 // Snapshot
-int SecCamera::beginSnapshot(void)
+int SecCamera::beginSnapshot(int nframes)
 {
     ALOGV("%s :", __func__);
 
@@ -1130,7 +1131,6 @@ int SecCamera::beginSnapshot(void)
     m_events_c.events = POLLIN | POLLERR;
 
     LOG_TIME_START(1) // prepare
-    int nframe = 1;
 
     ret = fimc_v4l2_enum_fmt(m_cam_fd, m_snapshot_v4lformat);
     CHECK(ret);
@@ -1142,13 +1142,20 @@ int SecCamera::beginSnapshot(void)
     }
     CHECK(ret);
 
-    ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframe);
-    CHECK(ret);
-    ret = fimc_v4l2_querybuf(m_cam_fd, &m_capture_buf, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+    ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframes);
     CHECK(ret);
 
-    ret = fimc_v4l2_qbuf(m_cam_fd, 0);
-    CHECK(ret);
+    m_capture_bufs = (fimc_buffer *) malloc(sizeof(fimc_buffer) * nframes);
+    m_capture_bufs_size = nframes;
+    m_capture_bufs_index = 0;
+
+    for(int i = m_capture_bufs_index; i < nframes; i++) {
+        memset(&m_capture_bufs[i], 0, sizeof(fimc_buffer));
+        ret = fimc_v4l2_querybuf(m_cam_fd, &m_capture_bufs[i], V4L2_BUF_TYPE_VIDEO_CAPTURE);
+        CHECK(ret);
+        ret = fimc_v4l2_qbuf(m_cam_fd, i);
+        CHECK(ret);
+    }
 
     ret = fimc_v4l2_streamon(m_cam_fd);
     CHECK(ret);
@@ -1159,17 +1166,35 @@ int SecCamera::beginSnapshot(void)
 
 int SecCamera::endSnapshot(void)
 {
+    ALOGV("%s :", __func__);
+
     int ret;
 
-    ALOGI("%s :", __func__);
-    if (m_capture_buf.start) {
-        munmap(m_capture_buf.start, m_capture_buf.length);
-        ALOGI("munmap():virt. addr %p size = %d\n",
-             m_capture_buf.start, m_capture_buf.length);
-        m_capture_buf.start = NULL;
-        m_capture_buf.length = 0;
+    CHECK_FD(m_cam_fd);
+
+    LOG_TIME_DEFINE(0)
+    LOG_TIME_DEFINE(1)
+
+    LOG_TIME_START(0)
+    if(m_capture_bufs) {
+        for(int i = 0; i < m_capture_bufs_size; i++) {
+            if (m_capture_bufs[i].start) {
+                munmap(m_capture_bufs[i].start, m_capture_bufs[i].length);
+                ALOGV("munmap():virt. addr %p size = %d\n",
+                        m_capture_bufs[i].start, m_capture_bufs[i].length);
+            }
+        }
+        free(m_capture_bufs);
+        m_capture_bufs = NULL;
     }
-    return 0;
+    LOG_TIME_END(0)
+
+    LOG_TIME_START(1)
+    ret = fimc_v4l2_streamoff(m_cam_fd);
+    CHECK(ret);
+    LOG_TIME_END(1)
+
+    return ret;
 }
 
 /*
@@ -1184,7 +1209,11 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
 
     CHECK_FD(m_cam_fd);
 
-    LOG_TIME_DEFINE(2)
+    if(m_capture_bufs_index >= m_capture_bufs_size) {
+        ALOGE("%s: can't poll capture buf out of index (index: %i, max: %i)",
+                __func__, m_capture_bufs_index, m_capture_bufs_size);
+        return -1;
+    }
 
     //Date time
     time_t rawtime;
@@ -1204,12 +1233,7 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ret = fimc_poll(&m_events_c);
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
-
-    LOG_TIME_START(2) // post
-    ret = fimc_v4l2_streamoff(m_cam_fd);
-    CHECK(ret);
-    LOG_TIME_END(2)
+    //fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
 
     *jpeg_size = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_SIZE);
     CHECK(*jpeg_size);
@@ -1222,8 +1246,9 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
             index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 
-    *jpeg_buf = (unsigned char*)(m_capture_buf.start) + main_offset;
+    *jpeg_buf = (unsigned char*)(m_capture_bufs[m_capture_bufs_index].start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
+    m_capture_bufs_index++;
 
     return 0;
 }
@@ -1342,29 +1367,35 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
     unsigned char *addr;
     int ret = 0;
 
-    LOG_TIME_DEFINE(2)
-    LOG_TIME_DEFINE(3)
-    LOG_TIME_DEFINE(4)
-    LOG_TIME_DEFINE(5)
+    CHECK_FD(m_cam_fd);
 
-    LOG_TIME_START(2) // capture
+    if(m_capture_bufs_index >= m_capture_bufs_size) {
+        ALOGE("%s: can't poll capture buf out of index (index: %i, max: %i)",
+                __func__, m_capture_bufs_index, m_capture_bufs_size);
+        return -1;
+    }
+
+    LOG_TIME_DEFINE(0)
+    LOG_TIME_DEFINE(1)
+
+    LOG_TIME_START(0) // capture
     fimc_poll(&m_events_c);
     index = fimc_v4l2_dqbuf(m_cam_fd);
     fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     ALOGV("\nsnapshot dequeued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
             index, m_snapshot_width, m_snapshot_height);
+    LOG_TIME_END(0)
 
-    LOG_TIME_END(2)
-
-    ALOGI("%s : calling memcpy from m_capture_buf", __func__);
-    memcpy(yuv_buf, (unsigned char*)m_capture_buf.start, m_snapshot_width * m_snapshot_height * 2);
-    LOG_TIME_START(5) // post
-    fimc_v4l2_streamoff(m_cam_fd);
-    LOG_TIME_END(5)
+    ALOGV("%s : calling memcpy from m_capture_bufs", __func__);
+    memcpy(yuv_buf, (unsigned char*)m_capture_bufs[m_capture_bufs_index].start,
+            m_snapshot_width * m_snapshot_height * 2);
+    m_capture_bufs_index++;
 
     LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu),"
                 " capture(%lu), memcpy(%lu), yuv2Jpeg(%lu), post(%lu)  us",
                     LOG_TIME(0), LOG_TIME(1), LOG_TIME(2), LOG_TIME(3), LOG_TIME(4), LOG_TIME(5));
+
+    LOG_TIME_START(1)
     /* JPEG encoding */
     JpegEncoder jpgEnc;
     int inFormat = JPG_MODESEL_YCBCR;
@@ -1420,6 +1451,7 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     setExifChangedAttribute();
     jpgEnc.encode(jpeg_size, &mExifInfo);
+    LOG_TIME_END(1)
 
     uint64_t outbuf_size;
     unsigned char *pOutBuf = (unsigned char *)jpgEnc.getOutBuf(&outbuf_size);

@@ -1016,6 +1016,7 @@ int CameraHardwareSec::pictureThread()
     int             thumbHeight = 0;
     int             thumbSize = 0;
     unsigned int    picturePhyAddr = 0;
+    int             frames = 1;
 
     unsigned char*  jpegData = NULL;
     unsigned int    jpegSize = 0;
@@ -1033,72 +1034,80 @@ int CameraHardwareSec::pictureThread()
     addrs[0].width  = pictureWidth;
     addrs[0].height = pictureHeight;
 
-    ret = mSecCamera->beginSnapshot();
+    if(mParameters.get(SecCameraParameters::KEY_BURST)) {
+        frames = mParameters.getInt(SecCameraParameters::KEY_BURST);
+    }
+
+    ret = mSecCamera->beginSnapshot(frames <= 0 ? 1 : frames);
     CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->beginSnapshot[%i]", __FUNCTION__, ret);
 
-    if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
-        mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
-    }
-
-    if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-        ret = mSecCamera->getJpeg(&picturePhyAddr, &jpegData, &jpegSize);
-        CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getJpeg[%i]", __FUNCTION__, ret);
-    } else {
-        jpegHeap = mGetMemoryCb(-1, frameSize, 1, 0);
-        postviewHeap = new MemoryHeapBase(postViewSize);
-        thumbnailHeap = new MemoryHeapBase(thumbSize);
-
-        ret = mSecCamera->getJpeg((unsigned char*)postviewHeap->base(),
-                                  (unsigned char*)jpegHeap->data, &jpegSize);
-        CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getSnapshotAndJpeg[%i]", __FUNCTION__, ret);
-
-        if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
-                            (char *)thumbnailHeap->base(), thumbWidth, thumbHeight)) {
-            CHECK_PICT(UNKNOWN_ERROR, "ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
+    do {
+        if((mMsgEnabled & CAMERA_MSG_SHUTTER) && mNotifyCb) {
+            mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
         }
-    }
 
-    if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
         if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
-            if(picturePhyAddr != 0) {
-                addrs[0].addr_y = picturePhyAddr;
-            }
+            ret = mSecCamera->getJpeg(&picturePhyAddr, &jpegData, &jpegSize);
+            CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getJpeg[%i]", __FUNCTION__, ret);
         } else {
-            memcpy(mRawHeap->data, postviewHeap->base(), postViewSize);
+            jpegHeap = mGetMemoryCb(-1, frameSize, 1, 0);
+            postviewHeap = new MemoryHeapBase(postViewSize);
+            thumbnailHeap = new MemoryHeapBase(thumbSize);
+
+            ret = mSecCamera->getJpeg((unsigned char*)postviewHeap->base(),
+                                      (unsigned char*)jpegHeap->data, &jpegSize);
+            CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getSnapshotAndJpeg[%i]", __FUNCTION__, ret);
+
+            if(!scaleDownYuv422((char *)postviewHeap->base(), postViewWidth, postViewHeight,
+                                (char *)thumbnailHeap->base(), thumbWidth, thumbHeight)) {
+                CHECK_PICT(UNKNOWN_ERROR, "ERR(%s):Fail on scaleDownYuv422()", __FUNCTION__);
+            }
         }
 
-        mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
-    } else if ((mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) && mNotifyCb) {
-        mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
-    }
+        if((mMsgEnabled & CAMERA_MSG_RAW_IMAGE) && mDataCb) {
+            if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
+                if(picturePhyAddr != 0) {
+                    addrs[0].addr_y = picturePhyAddr;
+                }
+            } else {
+                memcpy(mRawHeap->data, postviewHeap->base(), postViewSize);
+            }
 
-    if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
-        camera_memory_t* jpegMem = NULL;
-        if(jpegData != NULL) {
-            jpegMem = mGetMemoryCb(-1, jpegSize, 1, 0);
-            memcpy(jpegMem->data, jpegData, jpegSize);
-        } else {
-            camera_memory_t* exifHeap =
-                    mGetMemoryCb(-1, EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE, 1, 0);
-            int jpegExifSize = mSecCamera->getExif((unsigned char *)exifHeap->data,
-                    (unsigned char *)thumbnailHeap->base());
-            if (jpegExifSize < 0) {
-                ret = UNKNOWN_ERROR;
+            mDataCb(CAMERA_MSG_RAW_IMAGE, mRawHeap, 0, NULL, mCallbackCookie);
+        } else if ((mMsgEnabled & CAMERA_MSG_RAW_IMAGE_NOTIFY) && mNotifyCb) {
+            mNotifyCb(CAMERA_MSG_RAW_IMAGE_NOTIFY, 0, 0, mCallbackCookie);
+        }
+
+        if((mMsgEnabled & CAMERA_MSG_COMPRESSED_IMAGE) && mDataCb) {
+            camera_memory_t* jpegMem = NULL;
+            if(jpegData != NULL) {
+                jpegMem = mGetMemoryCb(-1, jpegSize, 1, 0);
+                memcpy(jpegMem->data, jpegData, jpegSize);
+            } else {
+                camera_memory_t* exifHeap =
+                        mGetMemoryCb(-1, EXIF_FILE_SIZE + JPG_STREAM_BUF_SIZE, 1, 0);
+                int jpegExifSize = mSecCamera->getExif((unsigned char *)exifHeap->data,
+                        (unsigned char *)thumbnailHeap->base());
+                if (jpegExifSize < 0) {
+                    ret = UNKNOWN_ERROR;
+                    RELEASE_MEMORY_BUFFER(exifHeap);
+                    goto out;
+                }
+
+                jpegMem = mGetMemoryCb(-1, jpegSize + jpegExifSize, 1, 0);
+                uint8_t *ptr = (uint8_t *) jpegMem->data;
+                memcpy(ptr, jpegHeap->data, 2); ptr += 2;
+                memcpy(ptr, exifHeap->data, jpegExifSize); ptr += jpegExifSize;
+                memcpy(ptr, (uint8_t *) jpegHeap->data + 2, jpegSize - 2);
                 RELEASE_MEMORY_BUFFER(exifHeap);
-                goto out;
             }
 
-            jpegMem = mGetMemoryCb(-1, jpegSize + jpegExifSize, 1, 0);
-            uint8_t *ptr = (uint8_t *) jpegMem->data;
-            memcpy(ptr, jpegHeap->data, 2); ptr += 2;
-            memcpy(ptr, exifHeap->data, jpegExifSize); ptr += jpegExifSize;
-            memcpy(ptr, (uint8_t *) jpegHeap->data + 2, jpegSize - 2);
-            RELEASE_MEMORY_BUFFER(exifHeap);
+            mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, 0, NULL, mCallbackCookie);
+            RELEASE_MEMORY_BUFFER(jpegMem);
         }
 
-        mDataCb(CAMERA_MSG_COMPRESSED_IMAGE, jpegMem, 0, NULL, mCallbackCookie);
-        RELEASE_MEMORY_BUFFER(jpegMem);
-    }
+        frames--;
+    } while(frames > 0 && ret == NO_ERROR);
 
 out:
     RELEASE_MEMORY_BUFFER(jpegHeap);

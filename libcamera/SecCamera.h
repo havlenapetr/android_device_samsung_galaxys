@@ -190,6 +190,7 @@ struct fimc_buffer {
     void    *start;
     size_t  length;
 };
+typedef struct fimc_buffer fimc_buffer;
 
 struct yuv_fmt_list {
     const char  *name;
@@ -408,7 +409,7 @@ public:
     int             setSlowAE(int slow_ae);
     int             setExifOrientationInfo(int orientationInfo);
     int             setBatchReflection(void);
-    int             beginSnapshot(void);
+    int             beginSnapshot(int nframes = 1);
     int             endSnapshot(void);
     int             setCameraSensorReset(void);
     int             setSensorMode(int sensor_mode); /* Camcorder fix fps */
@@ -555,7 +556,9 @@ private:
 
     exif_attribute_t mExifInfo;
 
-    struct fimc_buffer m_capture_buf;
+    fimc_buffer*    m_capture_bufs;
+    int             m_capture_bufs_size;
+    int             m_capture_bufs_index;
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);
