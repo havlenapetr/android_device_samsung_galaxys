@@ -558,7 +558,6 @@ private:
 
     fimc_buffer*    m_capture_bufs;
     int             m_capture_bufs_size;
-    int             m_capture_bufs_index;
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);

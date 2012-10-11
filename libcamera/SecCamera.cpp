@@ -568,8 +568,7 @@ SecCamera::SecCamera() :
             m_jpeg_thumbnail_height(0),
             m_jpeg_quality(100),
             m_capture_bufs(NULL),
-            m_capture_bufs_size(0),
-            m_capture_bufs_index(0)
+            m_capture_bufs_size(0)
 #ifdef ENABLE_ESD_PREVIEW_CHECK
             ,
             m_esd_check_count(0)
@@ -1167,9 +1166,8 @@ int SecCamera::beginSnapshot(int nframes)
 
     m_capture_bufs = (fimc_buffer *) malloc(sizeof(fimc_buffer) * nframes);
     m_capture_bufs_size = nframes;
-    m_capture_bufs_index = 0;
 
-    for(int i = m_capture_bufs_index; i < nframes; i++) {
+    for(int i = 0; i < nframes; i++) {
         memset(&m_capture_bufs[i], 0, sizeof(fimc_buffer));
         ret = fimc_v4l2_querybuf(m_cam_fd, &m_capture_bufs[i], V4L2_BUF_TYPE_VIDEO_CAPTURE);
         CHECK(ret);
@@ -1232,12 +1230,6 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     LOG_TIME_DEFINE(0)
     LOG_TIME_DEFINE(1)
 
-    if(m_capture_bufs_index >= m_capture_bufs_size) {
-        ALOGE("%s: can't poll capture buf out of index (index: %i, max: %i)",
-                __func__, m_capture_bufs_index, m_capture_bufs_size);
-        return -1;
-    }
-
     LOG_TIME_START(0)
     //Date time
     time_t rawtime;
@@ -1257,6 +1249,10 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ret = fimc_poll(&m_events_c);
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
+    if (!(0 <= index && index < m_capture_bufs_size)) {
+        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        return -1;
+    }
     //fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     LOG_TIME_END(0)
 
@@ -1272,9 +1268,8 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
             index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 
-    *jpeg_buf = (unsigned char*)(m_capture_bufs[m_capture_bufs_index].start) + main_offset;
+    *jpeg_buf = (unsigned char*)(m_capture_bufs[index].start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
-    m_capture_bufs_index++;
     LOG_TIME_END(1)
 
     LOG_CAMERA("getJpeg intervals: capture(%lu), poll_jpeg(%lu)  us",
@@ -1399,12 +1394,6 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     CHECK_FD(m_cam_fd);
 
-    if(m_capture_bufs_index >= m_capture_bufs_size) {
-        ALOGE("%s: can't poll capture buf out of index (index: %i, max: %i)",
-                __func__, m_capture_bufs_index, m_capture_bufs_size);
-        return -1;
-    }
-
     LOG_TIME_DEFINE(0)
     LOG_TIME_DEFINE(1)
     LOG_TIME_DEFINE(2)
@@ -1412,6 +1401,10 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
     LOG_TIME_START(0) // capture
     fimc_poll(&m_events_c);
     index = fimc_v4l2_dqbuf(m_cam_fd);
+    if (!(0 <= index && index < m_capture_bufs_size)) {
+        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        return -1;
+    }
     fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     ALOGV("\nsnapshot dequeued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
             index, m_snapshot_width, m_snapshot_height);
@@ -1419,9 +1412,8 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     LOG_TIME_START(1)
     ALOGV("%s : calling memcpy from m_capture_bufs", __func__);
-    memcpy(yuv_buf, (unsigned char*)m_capture_bufs[m_capture_bufs_index].start,
+    memcpy(yuv_buf, (unsigned char*)m_capture_bufs[index].start,
             m_snapshot_width * m_snapshot_height * 2);
-    m_capture_bufs_index++;
     LOG_TIME_END(1)
 
     LOG_TIME_START(2)
