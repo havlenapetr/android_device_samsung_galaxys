@@ -67,6 +67,26 @@ namespace android {
 // ======================================================================
 // Camera controls
 
+#if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
+static unsigned long measure_time(struct timeval *start, struct timeval *stop)
+{
+    unsigned long sec, usec, time;
+
+    sec = stop->tv_sec - start->tv_sec;
+
+    if (stop->tv_usec >= start->tv_usec) {
+        usec = stop->tv_usec - start->tv_usec;
+    } else {
+        usec = stop->tv_usec + 1000000 - start->tv_usec;
+        sec--;
+    }
+
+    time = (sec * 1000000) + usec;
+
+    return time;
+}
+#endif
+
 static int get_pixel_depth(unsigned int fmt)
 {
     int depth = 0;
@@ -1209,12 +1229,16 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
 
     CHECK_FD(m_cam_fd);
 
+    LOG_TIME_DEFINE(0)
+    LOG_TIME_DEFINE(1)
+
     if(m_capture_bufs_index >= m_capture_bufs_size) {
         ALOGE("%s: can't poll capture buf out of index (index: %i, max: %i)",
                 __func__, m_capture_bufs_index, m_capture_bufs_size);
         return -1;
     }
 
+    LOG_TIME_START(0)
     //Date time
     time_t rawtime;
     time(&rawtime);
@@ -1234,7 +1258,9 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
     //fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    LOG_TIME_END(0)
 
+    LOG_TIME_START(1)
     *jpeg_size = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_MAIN_SIZE);
     CHECK(*jpeg_size);
 
@@ -1249,6 +1275,10 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     *jpeg_buf = (unsigned char*)(m_capture_bufs[m_capture_bufs_index].start) + main_offset;
     *phyaddr = getPhyAddrY(index) + m_postview_offset;
     m_capture_bufs_index++;
+    LOG_TIME_END(1)
+
+    LOG_CAMERA("getJpeg intervals: capture(%lu), poll_jpeg(%lu)  us",
+                    LOG_TIME(0), LOG_TIME(1));
 
     return 0;
 }
@@ -1377,6 +1407,7 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     LOG_TIME_DEFINE(0)
     LOG_TIME_DEFINE(1)
+    LOG_TIME_DEFINE(2)
 
     LOG_TIME_START(0) // capture
     fimc_poll(&m_events_c);
@@ -1386,16 +1417,14 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
             index, m_snapshot_width, m_snapshot_height);
     LOG_TIME_END(0)
 
+    LOG_TIME_START(1)
     ALOGV("%s : calling memcpy from m_capture_bufs", __func__);
     memcpy(yuv_buf, (unsigned char*)m_capture_bufs[m_capture_bufs_index].start,
             m_snapshot_width * m_snapshot_height * 2);
     m_capture_bufs_index++;
+    LOG_TIME_END(1)
 
-    LOG_CAMERA("getSnapshotAndJpeg intervals : stopPreview(%lu), prepare(%lu),"
-                " capture(%lu), memcpy(%lu), yuv2Jpeg(%lu), post(%lu)  us",
-                    LOG_TIME(0), LOG_TIME(1), LOG_TIME(2), LOG_TIME(3), LOG_TIME(4), LOG_TIME(5));
-
-    LOG_TIME_START(1)
+    LOG_TIME_START(2)
     /* JPEG encoding */
     JpegEncoder jpgEnc;
     int inFormat = JPG_MODESEL_YCBCR;
@@ -1451,7 +1480,7 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     setExifChangedAttribute();
     jpgEnc.encode(jpeg_size, &mExifInfo);
-    LOG_TIME_END(1)
+    LOG_TIME_END(2)
 
     uint64_t outbuf_size;
     unsigned char *pOutBuf = (unsigned char *)jpgEnc.getOutBuf(&outbuf_size);
@@ -1462,6 +1491,9 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
     }
 
     memcpy(jpeg_buf, pOutBuf, outbuf_size);
+
+    LOG_CAMERA("getJpeg intervals: capture(%lu), memcpy(%lu), yuv2Jpeg(%lu)  us",
+                    LOG_TIME(0), LOG_TIME(1), LOG_TIME(2));
 
     return 0;
 }

@@ -575,8 +575,6 @@ private:
     static int      jpegLineLength;
 };
 
-extern unsigned long measure_time(struct timeval *start, struct timeval *stop);
-
 }; // namespace android
 
 #endif // ANDROID_HARDWARE_CAMERA_SEC_H
