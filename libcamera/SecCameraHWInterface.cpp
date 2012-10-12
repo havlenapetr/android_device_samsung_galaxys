@@ -68,7 +68,9 @@ gralloc_module_t const* CameraHardwareSec::mGrallocHal = NULL;
 
 CameraHardwareSec::CameraHardwareSec(int cameraId)
         :
+          mCaptureMode(SNAPSHOT),
           mCaptureInProgress(false),
+          mCaptureCancel(false),
           mFaceDetectStarted(false),
           mPreviewPaused(false),
           mParameters(),
@@ -1033,7 +1035,7 @@ int CameraHardwareSec::pictureThread()
     addrs[0].width  = pictureWidth;
     addrs[0].height = pictureHeight;
 
-    ret = mSecCamera->beginSnapshot();
+    ret = mSecCamera->beginSnapshot(mCaptureMode == BURST);
     CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->beginSnapshot[%i]", __FUNCTION__, ret);
 
     do {
@@ -1103,7 +1105,14 @@ int CameraHardwareSec::pictureThread()
             RELEASE_MEMORY_BUFFER(jpegMem);
         }
 
-    } while(false && ret == NO_ERROR);
+        mCaptureLock.lock();
+        if(mCaptureCancel) {
+            mCaptureLock.unlock();
+            break;
+        }
+        mCaptureLock.unlock();
+
+    } while(mCaptureMode == BURST && ret == NO_ERROR);
 
 out:
     RELEASE_MEMORY_BUFFER(jpegHeap);
@@ -1122,6 +1131,7 @@ status_t CameraHardwareSec::waitForCaptureCompletion(int msec) {
     nsecs_t endTime = (msec * 1000000LL) + systemTime(SYSTEM_TIME_MONOTONIC);
     Mutex::Autolock lock(mCaptureLock);
 
+    mCaptureCancel = true;
     while (mCaptureInProgress) {
         nsecs_t remainingTime = endTime - systemTime(SYSTEM_TIME_MONOTONIC);
         if (remainingTime <= 0) {
@@ -1171,6 +1181,7 @@ status_t CameraHardwareSec::takePicture()
     }
 
     mCaptureLock.lock();
+    mCaptureCancel = false;
     mCaptureInProgress = true;
     mCaptureLock.unlock();
 
@@ -1935,6 +1946,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             ALOGE("ERR(%s):Fail on mSecCamera->setDataLineCheck(%d)", __func__, new_dataline);
             ret = UNKNOWN_ERROR;
         }
+    }
+
+    // capture mode
+    CaptureMode new_capture_mode = (CaptureMode) params.getInt(SecCameraParameters::KEY_BURST);
+    if(!(new_capture_mode < SNAPSHOT || new_capture_mode > BURST)) {
+        mCaptureMode = new_capture_mode;
     }
 
     // galaxys ce147 need this

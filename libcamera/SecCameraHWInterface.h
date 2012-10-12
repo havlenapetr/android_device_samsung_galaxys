@@ -77,6 +77,12 @@ public:
 private:
     static  const int   kBufferCount = MAX_BUFFERS;
 
+    enum CaptureMode {
+        INVALID,
+        SNAPSHOT,
+        BURST
+    };
+
     class PreviewThread : public Thread {
         CameraHardwareSec *mHardware;
     public:
@@ -131,7 +137,9 @@ private:
 
     sp<PictureThread>   mPictureThread;
             int         pictureThread();
+            CaptureMode mCaptureMode;
             bool        mCaptureInProgress;
+            bool        mCaptureCancel;
 
             bool        scaleDownYuv422(char *srcBuf, uint32_t srcWidth,
                                         uint32_t srcHight, char *dstBuf,
