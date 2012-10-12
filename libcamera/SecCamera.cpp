@@ -348,7 +348,7 @@ static int fimc_v4l2_querybuf(int fp, struct fimc_buffer *buffer, enum v4l2_buf_
 
     v4l2_buf.type = type;
     v4l2_buf.memory = V4L2_MEMORY_MMAP;
-    v4l2_buf.index = 0;
+    v4l2_buf.index = buffer->index;
 
     ret = ioctl(fp , VIDIOC_QUERYBUF, &v4l2_buf);
     if (ret < 0) {
@@ -356,16 +356,16 @@ static int fimc_v4l2_querybuf(int fp, struct fimc_buffer *buffer, enum v4l2_buf_
         return -1;
     }
 
-    buffer->length = v4l2_buf.length;
     if ((buffer->start = (char *)mmap(0, v4l2_buf.length,
                                          PROT_READ | PROT_WRITE, MAP_SHARED,
                                          fp, v4l2_buf.m.offset)) < 0) {
          ALOGE("%s %d] mmap() failed\n",__func__, __LINE__);
          return -1;
     }
+    buffer->length = v4l2_buf.length;
 
-    ALOGI("%s: buffer->start = %p v4l2_buf.length = %d",
-         __func__, buffer->start, v4l2_buf.length);
+    ALOGI("%s: buffer->start = %p buffer->length = %d buffer->index = %d",
+         __func__, buffer->start, buffer->length, buffer->index);
 
     return 0;
 }
@@ -568,7 +568,8 @@ SecCamera::SecCamera() :
             m_jpeg_thumbnail_height(0),
             m_jpeg_quality(100),
             m_capture_bufs(NULL),
-            m_capture_bufs_size(0)
+            m_capture_bufs_size(0),
+            m_capture_burst(false)
 #ifdef ENABLE_ESD_PREVIEW_CHECK
             ,
             m_esd_check_count(0)
@@ -1127,11 +1128,11 @@ int SecCamera::getPreviewPixelFormat(void)
 
 // ======================================================================
 // Snapshot
-int SecCamera::beginSnapshot(int nframes)
+int SecCamera::beginSnapshot(bool burst)
 {
     ALOGV("%s :", __func__);
 
-    int ret = 0;
+    int nframes, ret = 0;
 
     CHECK_FD(m_cam_fd);
 
@@ -1157,14 +1158,15 @@ int SecCamera::beginSnapshot(int nframes)
     ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, m_snapshot_v4lformat);
     CHECK(ret);
 
+    nframes = 1;
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframes);
     CHECK(ret);
 
     m_capture_bufs = (fimc_buffer *) malloc(sizeof(fimc_buffer) * nframes);
     m_capture_bufs_size = nframes;
-
-    for(int i = 0; i < nframes; i++) {
-        memset(&m_capture_bufs[i], 0, sizeof(fimc_buffer));
+    m_capture_burst = burst;
+    for(int i = 0; i < m_capture_bufs_size; i++) {
+        m_capture_bufs[i].index = i;
         ret = fimc_v4l2_querybuf(m_cam_fd, &m_capture_bufs[i], V4L2_BUF_TYPE_VIDEO_CAPTURE);
         CHECK(ret);
         ret = fimc_v4l2_qbuf(m_cam_fd, i);
@@ -1249,7 +1251,12 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
         ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
         return -1;
     }
-    //fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    if(m_capture_burst) {
+        ret = fimc_v4l2_qbuf(m_cam_fd, index);
+        CHECK(ret);
+    } else {
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    }
     LOG_TIME_END(0)
 
     LOG_TIME_START(1)
@@ -3055,6 +3062,7 @@ inline int SecCamera::m_frameSize(int format, int width, int height)
     case V4L2_PIX_FMT_YUV422P:
     case V4L2_PIX_FMT_YUYV:
     case V4L2_PIX_FMT_UYVY:
+    case V4L2_PIX_FMT_JPEG:
         size = (width * height * 2);
         break;
 

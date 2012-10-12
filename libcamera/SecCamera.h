@@ -189,24 +189,9 @@ namespace android {
 struct fimc_buffer {
     void    *start;
     size_t  length;
+    int     index;
 };
 typedef struct fimc_buffer fimc_buffer;
-
-struct yuv_fmt_list {
-    const char  *name;
-    const char  *desc;
-    unsigned int    fmt;
-    int     depth;
-    int     planes;
-};
-
-//s1 [Apply factory standard]
-struct camsensor_date_info {
-    unsigned int year;
-    unsigned int month;
-    unsigned int date;
-};
-
 
 class SecCamera {
 public:
@@ -409,7 +394,7 @@ public:
     int             setSlowAE(int slow_ae);
     int             setExifOrientationInfo(int orientationInfo);
     int             setBatchReflection(void);
-    int             beginSnapshot(int nframes = 1);
+    int             beginSnapshot(bool burst = false);
     int             endSnapshot(void);
     int             setCameraSensorReset(void);
     int             setSensorMode(int sensor_mode); /* Camcorder fix fps */
@@ -558,6 +543,7 @@ private:
 
     fimc_buffer*    m_capture_bufs;
     int             m_capture_bufs_size;
+    bool            m_capture_burst;
     struct pollfd   m_events_c;
 
     inline int      m_frameSize(int format, int width, int height);

@@ -1016,7 +1016,6 @@ int CameraHardwareSec::pictureThread()
     int             thumbHeight = 0;
     int             thumbSize = 0;
     unsigned int    picturePhyAddr = 0;
-    int             frames = 1;
 
     unsigned char*  jpegData = NULL;
     unsigned int    jpegSize = 0;
@@ -1034,11 +1033,7 @@ int CameraHardwareSec::pictureThread()
     addrs[0].width  = pictureWidth;
     addrs[0].height = pictureHeight;
 
-    if(mParameters.get(SecCameraParameters::KEY_BURST)) {
-        frames = mParameters.getInt(SecCameraParameters::KEY_BURST);
-    }
-
-    ret = mSecCamera->beginSnapshot(frames <= 0 ? 1 : frames);
+    ret = mSecCamera->beginSnapshot();
     CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->beginSnapshot[%i]", __FUNCTION__, ret);
 
     do {
@@ -1108,8 +1103,7 @@ int CameraHardwareSec::pictureThread()
             RELEASE_MEMORY_BUFFER(jpegMem);
         }
 
-        frames--;
-    } while(frames > 0 && ret == NO_ERROR);
+    } while(false && ret == NO_ERROR);
 
 out:
     RELEASE_MEMORY_BUFFER(jpegHeap);
