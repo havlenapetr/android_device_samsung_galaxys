@@ -1046,7 +1046,9 @@ int CameraHardwareSec::pictureThread()
             mNotifyCb(CAMERA_MSG_SHUTTER, 0, 0, mCallbackCookie);
         }
 
-        if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK) {
+        /* our back camera sensor has own jpeg encoder */
+        if(mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK &&
+                    mSecCamera->getSnapshotPixelFormat() == V4L2_PIX_FMT_JPEG) {
             ret = mSecCamera->getJpeg(&picturePhyAddr, &jpegData, &jpegSize);
             CHECK_PICT(ret, "ERR(%s):Fail on SecCamera->getJpeg[%i]", __FUNCTION__, ret);
         } else {
@@ -1161,9 +1163,8 @@ status_t CameraHardwareSec::takePicture()
     }
 
     if (!mRawHeap) {
-        int rawHeapSize = mPostViewSize;
-        ALOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", rawHeapSize);
-        mRawHeap = mGetMemoryCb(-1, rawHeapSize, 1, 0);
+        ALOGV("mRawHeap : MemoryHeapBase(previewHeapSize(%d))", mPostViewSize);
+        mRawHeap = mGetMemoryCb(-1, mPostViewSize, 1, 0);
         if (!mRawHeap) {
             ALOGE("ERR(%s): Raw heap creation fail", __func__);
             return UNKNOWN_ERROR;
@@ -1327,7 +1328,8 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_str_picture_format, "uyv422i")) //Non-zero copy UYVY format
             new_picture_format = V4L2_PIX_FMT_UYVY;
         else if (!strcmp(new_str_picture_format, SecCameraParameters::PIXEL_FORMAT_JPEG))
-            new_picture_format = V4L2_PIX_FMT_YUYV;
+            new_picture_format = mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK ?
+                    V4L2_PIX_FMT_JPEG : V4L2_PIX_FMT_YUYV;
         else if (!strcmp(new_str_picture_format, "yuv422p"))
             new_picture_format = V4L2_PIX_FMT_YUV422P;
         else

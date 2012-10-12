@@ -1154,11 +1154,7 @@ int SecCamera::beginSnapshot(int nframes)
     ret = fimc_v4l2_enum_fmt(m_cam_fd, m_snapshot_v4lformat);
     CHECK(ret);
 
-    if (m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height, V4L2_PIX_FMT_JPEG);
-    } else {
-        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, m_snapshot_v4lformat);
-    }
+    ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, m_snapshot_v4lformat);
     CHECK(ret);
 
     ret = fimc_v4l2_reqbufs(m_cam_fd, V4L2_BUF_TYPE_VIDEO_CAPTURE, nframes);
@@ -1544,26 +1540,27 @@ int SecCamera::setSnapshotPixelFormat(int pixel_format)
         m_snapshot_v4lformat = v4lpixelformat;
     }
 
-#if defined(LOG_NDEBUG) && LOG_NDEBUG == 0
     if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV420)
-        ALOGE("%s : SnapshotFormat:V4L2_PIX_FMT_YUV420", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_YUV420", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_NV12", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV12T)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_NV12T", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_NV21)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_NV21", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUV422P)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_YUV422P", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_YUYV)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_YUYV", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_UYVY)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_UYVY", __func__);
     else if (m_snapshot_v4lformat == V4L2_PIX_FMT_RGB565)
-        ALOGD("%s : SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_RGB565", __func__);
+    else if (m_snapshot_v4lformat == V4L2_PIX_FMT_JPEG)
+        ALOGV("%s : SnapshotFormat:V4L2_PIX_FMT_JPEG", __func__);
     else
-        ALOGD("SnapshotFormat:UnknownFormat");
-#endif
+        ALOGE("SnapshotFormat:UnknownFormat");
+
     return 0;
 }
 
