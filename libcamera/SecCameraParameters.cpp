@@ -20,6 +20,7 @@
 namespace android {
 
 const char SecCameraParameters::KEY_BURST[] = "burst-capture";
+const char SecCameraParameters::KEY_BURST_SUPPORTED[] = "burst-capture-supported";
 
 const char SecCameraParameters::KEY_ISO[] = "iso";
 const char SecCameraParameters::KEY_SUPPORTED_ISO_MODES[] = "iso-values";

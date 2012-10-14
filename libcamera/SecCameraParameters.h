@@ -93,6 +93,7 @@ public:
     SecCameraParameters(const String8 &params);
 
     static const char KEY_BURST[];
+    static const char KEY_BURST_SUPPORTED[];
 
     static const char KEY_ISO[];
     static const char KEY_SUPPORTED_ISO_MODES[];

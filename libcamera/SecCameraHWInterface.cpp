@@ -311,6 +311,9 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_PREVIEW_FPS_RANGE, "15000,30000");
 
         p.set(SecCameraParameters::KEY_FOCAL_LENGTH, "3.43");
+
+        // we support burst capture
+        p.set(SecCameraParameters::KEY_BURST_SUPPORTED, SecCameraParameters::TRUE);
     } else {
         p.set(SecCameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,30000)");
         p.set(SecCameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,30000");
@@ -1312,6 +1315,14 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
+    // burst mode
+    const char* burst_mode = params.get(SecCameraParameters::KEY_BURST);
+    if (burst_mode && !strcmp(burst_mode, SecCameraParameters::TRUE)) {
+        mCaptureMode = BURST;
+    } else {
+        mCaptureMode = SNAPSHOT;
+    }
+
     // picture format
     const char *new_str_picture_format = params.getPictureFormat();
     ALOGV("%s : new_str_picture_format %s", __func__, new_str_picture_format);
@@ -1333,8 +1344,8 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_str_picture_format, "uyv422i")) //Non-zero copy UYVY format
             new_picture_format = V4L2_PIX_FMT_UYVY;
         else if (!strcmp(new_str_picture_format, SecCameraParameters::PIXEL_FORMAT_JPEG))
-            new_picture_format = mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK ?
-                    V4L2_PIX_FMT_JPEG : V4L2_PIX_FMT_YUYV;
+            new_picture_format = (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK &&
+                    mCaptureMode == SNAPSHOT) ? V4L2_PIX_FMT_JPEG : V4L2_PIX_FMT_YUYV;
         else if (!strcmp(new_str_picture_format, "yuv422p"))
             new_picture_format = V4L2_PIX_FMT_YUV422P;
         else
@@ -1946,12 +1957,6 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
             ALOGE("ERR(%s):Fail on mSecCamera->setDataLineCheck(%d)", __func__, new_dataline);
             ret = UNKNOWN_ERROR;
         }
-    }
-
-    // capture mode
-    CaptureMode new_capture_mode = (CaptureMode) params.getInt(SecCameraParameters::KEY_BURST);
-    if(!(new_capture_mode < SNAPSHOT || new_capture_mode > BURST)) {
-        mCaptureMode = new_capture_mode;
     }
 
     // galaxys ce147 need this

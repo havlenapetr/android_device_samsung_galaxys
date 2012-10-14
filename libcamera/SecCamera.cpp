@@ -1035,7 +1035,7 @@ int SecCamera::getPreview()
 
     index = fimc_v4l2_dqbuf(m_cam_fd);
     if (!(0 <= index && index < MAX_BUFFERS)) {
-        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        ALOGE("ERR(%s):wrong index = %d", __func__, index);
         return -1;
     }
 
@@ -1248,7 +1248,7 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
     if (!(0 <= index && index < m_capture_bufs_size)) {
-        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        ALOGE("ERR(%s):wrong index = %d", __func__, index);
         return -1;
     }
     if(m_capture_burst) {
@@ -1391,9 +1391,7 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 {
     ALOGV("%s :", __func__);
 
-    int index;
-    unsigned char *addr;
-    int ret = 0;
+    int index, ret = 0;
 
     CHECK_FD(m_cam_fd);
 
@@ -1402,14 +1400,25 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
     LOG_TIME_DEFINE(2)
 
     LOG_TIME_START(0) // capture
+    if(m_camera_id == CAMERA_ID_BACK) {
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_CAPTURE, 0);
+        CHECK(ret);
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
+        CHECK(ret);
+    }
     fimc_poll(&m_events_c);
     index = fimc_v4l2_dqbuf(m_cam_fd);
     if (!(0 <= index && index < m_capture_bufs_size)) {
-        ALOGE("ERR(%s):wrong index = %d\n", __func__, index);
+        ALOGE("ERR(%s):wrong index = %d", __func__, index);
         return -1;
     }
-    fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
-    ALOGV("\nsnapshot dequeued buffer = %d snapshot_width = %d snapshot_height = %d\n\n",
+    if(m_capture_burst) {
+        ret = fimc_v4l2_qbuf(m_cam_fd, index);
+        CHECK(ret);
+    } else {
+        fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
+    }
+    ALOGI("Snapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d",
             index, m_snapshot_width, m_snapshot_height);
     LOG_TIME_END(0)
 
