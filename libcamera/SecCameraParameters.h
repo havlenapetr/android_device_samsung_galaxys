@@ -92,6 +92,9 @@ public:
     SecCameraParameters();
     SecCameraParameters(const String8 &params);
 
+    static const char KEY_VIDEO_STABILIZATION[];
+    static const char KEY_VIDEO_STABILIZATION_SUPPORTED[];
+
     static const char KEY_BURST[];
     static const char KEY_BURST_SUPPORTED[];
 

@@ -19,6 +19,9 @@
 
 namespace android {
 
+const char SecCameraParameters::KEY_VIDEO_STABILIZATION[] = "video-stabilization";
+const char SecCameraParameters::KEY_VIDEO_STABILIZATION_SUPPORTED[] = "video-stabilization-supported";
+
 const char SecCameraParameters::KEY_BURST[] = "burst-capture";
 const char SecCameraParameters::KEY_BURST_SUPPORTED[] = "burst-capture-supported";
 

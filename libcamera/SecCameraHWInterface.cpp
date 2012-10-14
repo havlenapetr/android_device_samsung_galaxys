@@ -314,6 +314,9 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
 
         // we support burst capture
         p.set(SecCameraParameters::KEY_BURST_SUPPORTED, SecCameraParameters::TRUE);
+
+        // we support video stabilization through antishake feature
+        p.set(SecCameraParameters::KEY_VIDEO_STABILIZATION, SecCameraParameters::TRUE);
     } else {
         p.set(SecCameraParameters::KEY_SUPPORTED_PREVIEW_FPS_RANGE, "(7500,30000)");
         p.set(SecCameraParameters::KEY_PREVIEW_FPS_RANGE, "7500,30000");
@@ -1757,11 +1760,12 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         }
     }
 
-    //anti shake
-    int new_anti_shake = mInternalParameters.getInt("anti-shake");
-    if (0 <= new_anti_shake) {
-        if (mSecCamera->setAntiShake(new_anti_shake) < 0) {
-            ALOGE("ERR(%s):Fail on mSecCamera->setWDR(%d)", __func__, new_anti_shake);
+    // video stabilization
+    const char* video_stabilization = params.get(SecCameraParameters::KEY_VIDEO_STABILIZATION);
+    if (video_stabilization) {
+        if (mSecCamera->setAntiShake(!strcmp(video_stabilization, SecCameraParameters::TRUE) ?
+                                     ANTI_SHAKE_MOVIE_ON : ANTI_SHAKE_OFF) < 0) {
+            ALOGE("ERR(%s):Fail on mSecCamera->setAntiShake()", __func__);
             ret = UNKNOWN_ERROR;
         }
     }
