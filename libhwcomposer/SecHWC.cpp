@@ -707,7 +707,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     }
 
     /* open pp */
-    if (createFimc(&dev->fimc) < 0) {
+    if (createFimc(&dev->fimc, "/dev/video1") < 0) {
         ALOGE("%s::creatFimc() fail", __func__);
         status = -EINVAL;
         goto err;
