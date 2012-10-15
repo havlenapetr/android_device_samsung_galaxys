@@ -38,10 +38,8 @@
 #include <hardware/hardware.h>
 #include <hardware/hwcomposer.h>
 
-#include "s5p_fimc.h"
+#include "fimc.h"
 #include "sec_lcd.h"
-#include "sec_format.h"
-#include "sec_utils.h"
 #include "hal_public.h"
 
 #define GRALLOC_USAGE_PHYS_CONTIG GRALLOC_USAGE_PRIVATE_1
@@ -50,33 +48,6 @@
 #define NUM_OF_WIN_BUF      (3)
 #define NUM_OF_MEM_OBJ      (1)
 #define MAX_NUM_PLANES      (3)
-
-#define MAX_RESIZING_RATIO_LIMIT  (63)
-
-struct sec_rect {
-    uint32_t x;
-    uint32_t y;
-    uint32_t w;
-    uint32_t h;
-};
-
-struct sec_img {
-    uint32_t w;
-    uint32_t h;
-    uint32_t format;
-    uint32_t base;
-    uint32_t offset;
-    int      mem_id;
-    int      mem_type;
-};
-
-inline int SEC_MIN(int x, int y) {
-    return ((x < y) ? x : y);
-}
-
-inline int SEC_MAX(int x, int y) {
-    return ((x > y) ? x : y);
-}
 
 struct hwc_win_info_t {
     int        fd;
@@ -100,12 +71,6 @@ struct hwc_win_info_t {
 enum {
     HWC_WIN_FREE = 0,
     HWC_WIN_RESERVED,
-};
-
-enum {
-    HWC_UNKNOWN_MEM_TYPE = 0,
-    HWC_PHYS_MEM_TYPE,
-    HWC_VIRT_MEM_TYPE,
 };
 
 struct hwc_context_t {
@@ -132,21 +97,5 @@ int window_show(struct hwc_win_info_t *win);
 int window_hide(struct hwc_win_info_t *win);
 int window_get_global_lcd_info(struct hwc_context_t *ctx);
 
-int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src);
-int fimc_v4l2_set_dst(int fd, s5p_fimc_img_info *dst, int rotation, unsigned int addr);
-int fimc_v4l2_stream_on(int fd, enum v4l2_buf_type type);
-int fimc_v4l2_queue(int fd, struct fimc_buf *fimc_buf);
-int fimc_v4l2_dequeue(int fd);
-int fimc_v4l2_stream_off(int fd);
-int fimc_v4l2_clr_buf(int fd);
-int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf);
-
-int createFimc(s5p_fimc_t *fimc, const char* dev);
-int destroyFimc(s5p_fimc_t *fimc);
-int runFimc(struct hwc_context_t *ctx,
-            struct sec_img *src_img, struct sec_rect *src_rect,
-            struct sec_img *dst_img, struct sec_rect *dst_rect,
-            unsigned int *phyAddr,
-            uint32_t transform);
 #endif /* ANDROID_SEC_HWC_UTILS_H_*/
 

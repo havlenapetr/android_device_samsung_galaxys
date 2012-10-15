@@ -83,7 +83,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
     src_img->offset  = 0;
     src_img->mem_id  =0;
 
-    src_img->mem_type = HWC_PHYS_MEM_TYPE;
+    src_img->mem_type = FIMC_MEM_TYPE_PHYS;
     src_img->w = (src_img->w + 15) & (~15);
     src_img->h = (src_img->h + 1) & (~1) ;
 
@@ -111,7 +111,7 @@ static int set_src_dst_info(hwc_layer_t *cur,
     dst_img->base     = win->addr[win->buf_index];
     dst_img->offset   = 0;
     dst_img->mem_id   = 0;
-    dst_img->mem_type = HWC_PHYS_MEM_TYPE;
+    dst_img->mem_type = FIMC_MEM_TYPE_PHYS;
 
     //set dst rect
     //fimc dst image will be stored from left top corner
@@ -368,10 +368,10 @@ static int hwc_set(hwc_composer_device_t *dev,
                 set_src_dst_info (cur, win, &src_img, &dst_img, &src_rect,
                         &dst_rect, i);
 
-                ret = runFimc(ctx, &src_img, &src_rect, &dst_img, &dst_rect,
+                ret = fimc_flush(&ctx->fimc, &src_img, &src_rect, &dst_img, &dst_rect,
                         phyAddr, cur->transform);
                 if (ret < 0){
-                   ALOGE("%s::runFimc fail : ret=%d\n", __func__, ret);
+                   ALOGE("%s::fimc_flush fail : ret=%d\n", __func__, ret);
                    skipped_window_mask |= (1 << i);
                    continue;
                 }
@@ -572,10 +572,7 @@ static int hwc_device_close(struct hw_device_t *dev)
     int i;
 
     if (ctx) {
-        if (destroyFimc(&ctx->fimc) < 0) {
-            ALOGE("%s::destroyFimc fail", __func__);
-            ret = -1;
-        }
+        fimc_close(&ctx->fimc);
 
         if (window_close(&ctx->global_lcd_win) < 0) {
             ALOGE("%s::window_close() fail", __func__);
@@ -707,8 +704,8 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     }
 
     /* open pp */
-    if (createFimc(&dev->fimc, "/dev/video1") < 0) {
-        ALOGE("%s::creatFimc() fail", __func__);
+    if (fimc_open(&dev->fimc, "/dev/video1") < 0) {
+        ALOGE("%s::fimc_open() fail", __func__);
         status = -EINVAL;
         goto err;
     }
@@ -725,8 +722,7 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     return 0;
 
 err:
-    if (destroyFimc(&dev->fimc) < 0)
-        ALOGE("%s::destroyFimc() fail", __func__);
+    fimc_close(&dev->fimc);
 
     if (window_close(&dev->global_lcd_win) < 0)
         ALOGE("%s::window_close() fail", __func__);
