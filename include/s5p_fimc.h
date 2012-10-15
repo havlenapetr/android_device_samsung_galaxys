@@ -86,12 +86,6 @@ struct fimc_buf {
  	size_t		length[3];
 };
 
-struct fimc_buffer {
-	void	*virt_addr;
-	void	*phys_addr;
-	size_t	length;
-};
-
 struct yuv_fmt_list {
 	const char 		*name;
 	const char 		*desc;
@@ -133,7 +127,6 @@ typedef struct
 
 typedef struct _s5p_fimc_t {
     int                 dev_fd;
-    struct fimc_buffer  out_buf;
 
     s5p_fimc_params_t   params;
 

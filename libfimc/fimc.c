@@ -660,11 +660,6 @@ err:
 
 void fimc_close(s5p_fimc_t *fimc)
 {
-    if (fimc->out_buf.virt_addr != NULL) {
-        fimc->out_buf.virt_addr = NULL;
-        fimc->out_buf.length = 0;
-    }
-
     /* close */
     if (0 <= fimc->dev_fd)
         close(fimc->dev_fd);
