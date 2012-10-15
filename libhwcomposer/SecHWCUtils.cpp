@@ -766,13 +766,11 @@ switch (rotate_value) {
     return 0;
 }
 
-int createFimc(s5p_fimc_t *fimc)
+int createFimc(s5p_fimc_t *fimc, const char* dev)
 {
     struct v4l2_capability cap;
     struct v4l2_format fmt;
     struct v4l2_control vc;
-
-    #define  PP_DEVICE_DEV_NAME  "/dev/video1"
 
     /* open device file */
     if(fimc->dev_fd < 0) {

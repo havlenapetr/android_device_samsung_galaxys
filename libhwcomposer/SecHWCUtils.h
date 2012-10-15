@@ -132,7 +132,16 @@ int window_show(struct hwc_win_info_t *win);
 int window_hide(struct hwc_win_info_t *win);
 int window_get_global_lcd_info(struct hwc_context_t *ctx);
 
-int createFimc(s5p_fimc_t *fimc);
+int fimc_v4l2_set_src(int fd, unsigned int hw_ver, s5p_fimc_img_info *src);
+int fimc_v4l2_set_dst(int fd, s5p_fimc_img_info *dst, int rotation, unsigned int addr);
+int fimc_v4l2_stream_on(int fd, enum v4l2_buf_type type);
+int fimc_v4l2_queue(int fd, struct fimc_buf *fimc_buf);
+int fimc_v4l2_dequeue(int fd);
+int fimc_v4l2_stream_off(int fd);
+int fimc_v4l2_clr_buf(int fd);
+int fimc_handle_oneshot(int fd, struct fimc_buf *fimc_buf);
+
+int createFimc(s5p_fimc_t *fimc, const char* dev);
 int destroyFimc(s5p_fimc_t *fimc);
 int runFimc(struct hwc_context_t *ctx,
             struct sec_img *src_img, struct sec_rect *src_rect,
