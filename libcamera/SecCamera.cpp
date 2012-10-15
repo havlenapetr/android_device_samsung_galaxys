@@ -39,8 +39,8 @@ using namespace android;
 
 #define CHECK(return_value)                                          \
     if (return_value < 0) {                                          \
-        ALOGE("%s::%d fail. errno: %s, m_camera_id = %d\n",          \
-             __func__, __LINE__, strerror(errno), m_camera_id);      \
+        ALOGE("%s::%d fail. errno[%d]: %s, m_camera_id = %d\n",      \
+             __func__, __LINE__, errno, strerror(errno), m_camera_id); \
         return -1;                                                   \
     }
 
@@ -1155,7 +1155,12 @@ int SecCamera::beginSnapshot(bool burst)
     ret = fimc_v4l2_enum_fmt(m_cam_fd, m_snapshot_v4lformat);
     CHECK(ret);
 
-    ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width, m_snapshot_v4lformat);
+    if (m_camera_id == CAMERA_ID_BACK)
+        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_width, m_snapshot_height,
+                m_snapshot_v4lformat);
+    else
+        ret = fimc_v4l2_s_fmt_cap(m_cam_fd, m_snapshot_height, m_snapshot_width,
+                m_snapshot_v4lformat);
     CHECK(ret);
 
     nframes = 1;
@@ -1175,6 +1180,11 @@ int SecCamera::beginSnapshot(bool burst)
 
     ret = fimc_v4l2_streamon(m_cam_fd);
     CHECK(ret);
+
+    if (m_camera_id == CAMERA_ID_BACK) {
+        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_CAPTURE, 0);
+        CHECK(ret);
+    }
     LOG_TIME_END(1)
 
     return 0;
@@ -1237,13 +1247,10 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     ret = fimc_v4l2_s_ext_ctrl(m_cam_fd, V4L2_CID_CAMERA_EXIF_TIME_INFO, timeinfo);
     CHECK(ret);
 
-    ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_CAPTURE, 0);
-    CHECK(ret);
-
+    // capture
     ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
     CHECK(ret);
 
-    // capture
     ret = fimc_poll(&m_events_c);
     CHECK(ret);
     index = fimc_v4l2_dqbuf(m_cam_fd);
@@ -1268,7 +1275,7 @@ int SecCamera::getJpeg(unsigned int *phyaddr, unsigned char** jpeg_buf,
     m_postview_offset = fimc_v4l2_g_ctrl(m_cam_fd, V4L2_CID_CAM_JPEG_POSTVIEW_OFFSET);
     CHECK(m_postview_offset);
 
-    ALOGI("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
+    ALOGV("Snapshot dqueued buffer=%d snapshot_width=%d snapshot_height=%d, size=%d, main_offset=%d",
             index, m_snapshot_width, m_snapshot_height, *jpeg_size, main_offset);
 
     *jpeg_buf = (unsigned char*)(m_capture_bufs[index].start) + main_offset;
@@ -1401,8 +1408,6 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
 
     LOG_TIME_START(0) // capture
     if(m_camera_id == CAMERA_ID_BACK) {
-        ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAM_CAPTURE, 0);
-        CHECK(ret);
         ret = fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_CAMERA_CAPTURE, 0);
         CHECK(ret);
     }
@@ -1418,7 +1423,7 @@ int SecCamera::getJpeg(unsigned char *yuv_buf, unsigned char *jpeg_buf,
     } else {
         fimc_v4l2_s_ctrl(m_cam_fd, V4L2_CID_STREAM_PAUSE, 0);
     }
-    ALOGI("Snapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d",
+    ALOGV("Snapshot dqueued buffer = %d snapshot_width = %d snapshot_height = %d",
             index, m_snapshot_width, m_snapshot_height);
     LOG_TIME_END(0)
 

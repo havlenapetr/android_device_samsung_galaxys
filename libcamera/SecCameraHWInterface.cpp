@@ -313,7 +313,7 @@ void CameraHardwareSec::initDefaultParameters(int cameraId)
         p.set(SecCameraParameters::KEY_FOCAL_LENGTH, "3.43");
 
         // we support burst capture
-        p.set(SecCameraParameters::KEY_BURST_SUPPORTED, SecCameraParameters::TRUE);
+        //p.set(SecCameraParameters::KEY_BURST_SUPPORTED, SecCameraParameters::TRUE);
 
         // we support video stabilization through antishake feature
         p.set(SecCameraParameters::KEY_VIDEO_STABILIZATION, SecCameraParameters::TRUE);
@@ -1347,8 +1347,8 @@ status_t CameraHardwareSec::setParameters(const CameraParameters& params)
         else if (!strcmp(new_str_picture_format, "uyv422i")) //Non-zero copy UYVY format
             new_picture_format = V4L2_PIX_FMT_UYVY;
         else if (!strcmp(new_str_picture_format, SecCameraParameters::PIXEL_FORMAT_JPEG))
-            new_picture_format = (mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK &&
-                    mCaptureMode == SNAPSHOT) ? V4L2_PIX_FMT_JPEG : V4L2_PIX_FMT_YUYV;
+            new_picture_format = mSecCamera->getCameraId() == SecCamera::CAMERA_ID_BACK ?
+                    V4L2_PIX_FMT_JPEG : V4L2_PIX_FMT_YUYV;
         else if (!strcmp(new_str_picture_format, "yuv422p"))
             new_picture_format = V4L2_PIX_FMT_YUV422P;
         else
