@@ -22,17 +22,20 @@ include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_SHARED_LIBRARIES := liblog libcutils libEGL libGLESv1_CM libhardware libhardware_legacy libfimc
-LOCAL_CFLAGS += -DLOG_TAG=\"hwcomposer\"
 
-LOCAL_C_INCLUDES := \
-    $(FIMC_INCLUDE) \
-    $(LOCAL_PATH)/../include
-
-LOCAL_SRC_FILES := SecHWCUtils.cpp SecHWC.cpp
-
+LOCAL_CFLAGS := -DLOG_TAG=\"hwcomposer\"
+ifeq ($(BOARD_HAVE_HDMI),true)
+    LOCAL_CFLAGS += -DBOARD_HAVE_HDMI
+endif
 ifeq ($(BOARD_CUSTOM_VSYNC_IOCTL),true)
     LOCAL_CFLAGS += -DVSYNC_IOCTL
 endif
+
+LOCAL_C_INCLUDES := \
+    $(LOCAL_PATH)/../include \
+    $(LOCAL_PATH)/../libfimc
+
+LOCAL_SRC_FILES := SecHWCUtils.cpp SecHWC.cpp
 
 LOCAL_MODULE := hwcomposer.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
