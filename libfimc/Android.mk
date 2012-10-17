@@ -17,8 +17,6 @@ ifeq ($(filter-out s5pc110,$(TARGET_BOARD_PLATFORM)),)
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-FIMC_INCLUDE := $(LOCAL_PATH)
-
 LOCAL_CFLAGS += -DLOG_TAG=\"libfimc\"
 
 LOCAL_C_INCLUDES := \

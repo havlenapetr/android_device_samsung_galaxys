@@ -69,6 +69,8 @@ int     fimc_flush(s5p_fimc_t *fimc,
                    unsigned int *phyAddr,
                    uint32_t transform);
 
+void*   fimc_get_reserved_mem_addr(s5p_fimc_t *fimc);
+
 #ifdef __cplusplus
 }
 #endif

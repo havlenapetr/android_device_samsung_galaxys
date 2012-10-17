@@ -599,6 +599,23 @@ static int fimc_core(s5p_fimc_t *fimc,
     return 0;
 }
 
+void* fimc_get_reserved_mem_addr(s5p_fimc_t *fimc)
+{
+    int ret;
+    struct v4l2_control vc;
+
+    vc.id = V4L2_CID_RESERVED_MEM_BASE_ADDR;
+    vc.value = 0;
+
+    ret = ioctl(fimc->dev_fd, VIDIOC_G_CTRL, &vc);
+    if (ret < 0) {
+        ALOGE("Err(%s) in video VIDIOC_G_CTRL (%d)",ret);
+        return NULL;
+    }
+
+    return vc.value;
+}
+
 int fimc_open(s5p_fimc_t *fimc, const char* dev)
 {
     struct v4l2_capability cap;
