@@ -137,16 +137,23 @@ PRODUCT_PACKAGES += \
     libOMX.SEC.M4V.Encoder.aries \
     libOMX.SEC.AVC.Encoder.aries
 
+# Board modules
+PRODUCT_PACKAGES += \
+    lights.s5pc110 \
+    hwcomposer.s5pc110 \
+
+ifeq ($(BOARD_HAVE_HDMI),true)
+PRODUCT_PACKAGES += \
+    hdmi.s5pc110
+endif
+
 # Misc other modules
 PRODUCT_PACKAGES += \
-    lights.aries \
-    overlay.aries \
-    hwcomposer.aries \
+    camera.aries \
     sensors.aries \
     audio.primary.aries \
     audio_policy.aries \
-    audio.usb.default \
-    camera.aries
+    audio.usb.default
 
 # FmRadio
 ifeq ($(BOARD_HAVE_FM_RADIO),true)
