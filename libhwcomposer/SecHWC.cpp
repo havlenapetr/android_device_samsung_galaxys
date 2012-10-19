@@ -639,6 +639,9 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     int status = 0;
     int err;
     struct hwc_win_info_t *win;
+#if defined(BOARD_HAVE_HDMI)
+    struct hw_module_t    *hdmi_module;
+#endif
 
     if(hw_get_module(GRALLOC_HARDWARE_MODULE_ID,
                 (const hw_module_t**)&gpsGrallocModule))
@@ -671,10 +674,16 @@ static int hwc_device_open(const struct hw_module_t* module, const char* name,
     *device = &dev->device.common;
 
 #if defined(BOARD_HAVE_HDMI)
+    dev->hdmi = NULL;
     if(hw_get_module(HDMI_HARDWARE_MODULE_ID,
-                (const hw_module_t**)&dev->hdmi)) {
+                (const hw_module_t**)&hdmi_module)) {
         ALOGE("%s:: Hdmi device not presented", __func__);
-        dev->hdmi = NULL;
+    } else {
+        int ret = module->methods->open(hdmi_module, "hdmi-composer",
+                (hw_device_t **)&dev->hdmi);
+        if(ret < 0) {
+            ALOGE("%s:: Can't open hdmi device : %s", __func__, strerror(ret));
+        }
     }
 #endif
 
