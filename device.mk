@@ -197,7 +197,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 # be reachable from resources or other mechanisms.
 PRODUCT_PROPERTY_OVERRIDES += \
     wifi.interface=wlan0 \
-    ro.telephony.ril_class=samsung \
+    ro.telephony.ril_class=SamsungRIL \
     mobiledata.interfaces=pdp0,eth0,gprs,ppp0
 
 # enable Google-specific location features,
