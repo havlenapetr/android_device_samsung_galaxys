@@ -152,7 +152,6 @@ PRODUCT_PACKAGES += \
     camera.aries \
     sensors.aries \
     audio.primary.aries \
-    audio_policy.aries \
     audio.usb.default
 
 # FmRadio
