@@ -152,7 +152,8 @@ PRODUCT_PACKAGES += \
     camera.aries \
     sensors.aries \
     audio.primary.aries \
-    audio.usb.default
+    audio.usb.default \
+    audio.a2dp.default
 
 # FmRadio
 ifeq ($(BOARD_HAVE_FM_RADIO),true)
