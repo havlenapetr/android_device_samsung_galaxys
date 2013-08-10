@@ -6,8 +6,7 @@ include $(CLEAR_VARS)
 LOCAL_CFLAGS:=-fno-short-enums
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../include
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../crespo/libs3cjpeg
-LOCAL_C_INCLUDES += frameworks/native/include/media/hardware
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../libs3cjpeg
 
 LOCAL_SRC_FILES:= \
     hal_module.cpp \
