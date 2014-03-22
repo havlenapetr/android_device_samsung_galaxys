@@ -27,6 +27,8 @@ BOARD_USES_LIBSECRIL_STUB := true
 
 TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_ABI2 := armeabi
+TARGET_CPU_VARIANT := cortex-a9
+TARGET_ARCH := arm
 TARGET_ARCH_VARIANT := armv7-a-neon
 ARCH_ARM_HAVE_TLS_REGISTER := true
 TARGET_GLOBAL_CFLAGS += -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp
@@ -43,6 +45,8 @@ TARGET_RELEASETOOLS_EXTENSIONS := device/samsung/galaxys
 TARGET_RECOVERY_UI_LIB := librecovery_ui_aries
 TARGET_RECOVERY_GRAPHICS_LIB := librecovery_graphics_aries
 TARGET_RECOVERY_INITRC := device/samsung/galaxys/recovery.rc
+TARGET_RECOVERY_FSTAB := device/samsung/galaxys/fstab.aries
+RECOVERY_FSTAB_VERSION := 2
 
 BOARD_MOBILEDATA_INTERFACE_NAME = "pdp0"
 

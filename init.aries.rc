@@ -6,11 +6,14 @@ on init
     export USB_STORAGE /mnt/sda
     export PHONE_STORAGE /mnt/emmc
     export EXTERNAL_STORAGE /mnt/sdcard
-    mkdir /mnt/sda 0000 system system
-    mkdir /mnt/emmc 0000 system system
-    symlink /mnt/emmc /emmc
-    mkdir /mnt/sdcard 0000 system system
-    symlink /mnt/sdcard /sdcard
+
+    mkdir /mnt/sda 0000 root root
+    mkdir /storage/sdcard 0000 root root
+    mkdir /storage/emmc 0000 root root
+    symlink /storage/emmc /emmc
+    symlink /storage/sdcard /sdcard
+    symlink /storage/sdcard /mnt/sdcard
+
     mkdir /datadata 0771 system system
 
 on charger
@@ -22,7 +25,6 @@ on boot
     
     setprop ro.build.product aries
     setprop ro.product.device aries
-    setprop ro.radio.noril yes
 
 # fake some battery state
     setprop status.battery.state Slow
