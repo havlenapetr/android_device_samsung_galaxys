@@ -43,12 +43,12 @@ DEVICE_PACKAGE_OVERLAYS := device/samsung/galaxys/overlay
 # These are the hardware-specific configuration files
 PRODUCT_COPY_FILES := \
     device/samsung/galaxys/asound.conf:system/etc/asound.conf \
-    device/samsung/galaxys/vold.fstab:system/etc/vold.fstab \
     device/samsung/galaxys/egl.cfg:system/lib/egl/egl.cfg \
     device/samsung/galaxys/main.conf:system/etc/bluetooth/main.conf
 
 # Init files
 PRODUCT_COPY_FILES += \
+    device/samsung/galaxys/fstab.aries:root/fstab.aries \
     device/samsung/galaxys/init.aries.usb.rc:root/init.aries.usb.rc \
     device/samsung/galaxys/ueventd.aries.rc:root/ueventd.aries.rc \
     device/samsung/galaxys/recovery.rc:root/recovery.rc
@@ -68,25 +68,11 @@ endif
 
 # Recovery images and keys
 PRODUCT_COPY_FILES += \
-    device/samsung/galaxys/recovery.fstab:root/system/etc/recovery.fstab \
-    device/samsung/galaxys/keys:root/res/keys \
-    bootable/recovery/res/images/icon_error.png:root/res/images/icon_error.png \
-    bootable/recovery/res/images/icon_installing.png:root/res/images/icon_installing.png \
-    bootable/recovery/res/images/indeterminate01.png:root/res/images/indeterminate01.png \
-    bootable/recovery/res/images/indeterminate02.png:root/res/images/indeterminate02.png \
-    bootable/recovery/res/images/indeterminate03.png:root/res/images/indeterminate03.png \
-    bootable/recovery/res/images/indeterminate04.png:root/res/images/indeterminate04.png \
-    bootable/recovery/res/images/indeterminate05.png:root/res/images/indeterminate05.png \
-    bootable/recovery/res/images/indeterminate06.png:root/res/images/indeterminate06.png \
-    bootable/recovery/res/images/icon_installing_overlay01.png:root/res/images/icon_installing_overlay01.png \
-    bootable/recovery/res/images/icon_installing_overlay02.png:root/res/images/icon_installing_overlay02.png \
-    bootable/recovery/res/images/icon_installing_overlay03.png:root/res/images/icon_installing_overlay03.png \
-    bootable/recovery/res/images/icon_installing_overlay04.png:root/res/images/icon_installing_overlay04.png \
-    bootable/recovery/res/images/icon_installing_overlay05.png:root/res/images/icon_installing_overlay05.png \
-    bootable/recovery/res/images/icon_installing_overlay06.png:root/res/images/icon_installing_overlay06.png \
-    bootable/recovery/res/images/icon_installing_overlay07.png:root/res/images/icon_installing_overlay07.png \
-    bootable/recovery/res/images/progress_empty.png:root/res/images/progress_empty.png \
-    bootable/recovery/res/images/progress_fill.png:root/res/images/progress_fill.png
+    device/samsung/galaxys/keys:root/res/keys
+
+PRODUCT_COPY_FILES += $(foreach image,\
+    $(wildcard bootable/recovery/res/images/*.png),\
+    $(image):root/res/images/$(notdir $(image)))
 
 # Prebuilt kl keymaps
 PRODUCT_COPY_FILES += \
@@ -198,6 +184,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
 PRODUCT_PROPERTY_OVERRIDES += \
     wifi.interface=wlan0 \
     ro.telephony.ril_class=SamsungRIL \
+    ro.telephony.ril.v3=icccardstatus,datacall,signalstrength,facilitylock \
     mobiledata.interfaces=pdp0,eth0,gprs,ppp0
 
 # enable Google-specific location features,
