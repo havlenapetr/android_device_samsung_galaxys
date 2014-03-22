@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include <MetadataBufferType.h>
+#include <media/hardware/MetadataBufferType.h>
 
 #define BACK_CAMERA_AUTO_FOCUS_DISTANCES_STR       "0.10,1.20,Infinity"
 #define BACK_CAMERA_MACRO_FOCUS_DISTANCES_STR      "0.10,0.20,Infinity"
