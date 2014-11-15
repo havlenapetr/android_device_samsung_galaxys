@@ -218,6 +218,9 @@ PRODUCT_COPY_FILES += $(foreach module,\
     $(wildcard device/samsung/galaxys/*.ko),\
     $(module):system/lib/modules/$(notdir $(module)))
 
+#TARGET_KERNEL_SOURCE := kernel/samsung
+#TARGET_KERNEL_CONFIG := cyanogenmod_galaxysmtd_defconfig
+
 ifeq ($(TARGET_PREBUILT_KERNEL),)
     LOCAL_KERNEL := device/samsung/galaxys/kernel
 else
