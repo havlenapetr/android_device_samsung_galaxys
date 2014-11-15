@@ -103,9 +103,6 @@
     <!-- Package name providing network location support. -->
     <string name="config_networkLocationProviderPackageName" translatable="false">com.google.android.location</string>
 
-    <!-- Package name providing geocoder API support. -->
-    <string name="config_geocodeProviderPackageName" translatable="false">com.google.android.location</string>
-
     <!-- XXXXX NOTE THE FOLLOWING RESOURCES USE THE WRONG NAMING CONVENTION.
          Please don't copy them, copy anything else. -->
 
@@ -171,9 +168,6 @@
     <!-- Minimum screen brightness allowed by the power manager. -->
     <integer name="config_screenBrightnessDim">10</integer>
 
-    <!-- Boolean indicating whether the wifi chipset has p2p support -->
-    <bool translatable="false" name="config_wifi_p2p_support">true</bool>
-
     <!-- Boolean indicating whether the wifi chipset supports background scanning mechanism -->
     <bool translatable="false" name="config_wifi_background_scan_support">true</bool>
 
@@ -212,4 +206,7 @@
     <!-- The attenuation in dB applied to the sound effects played
          through AudioManager.playSoundEffect() when no volume is specified. -->
     <integer name="config_soundEffectVolumeDb">-12</integer>
+
+    <!-- Boolean to enable stk functionality on Samsung phones -->
+    <bool name="config_samsung_stk">true</bool>
 </resources>
